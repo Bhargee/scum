@@ -1,26 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
-#include <stdbool.h>
-
-/* All definitions required for datatypes/language constructs and all associated
- * functions for making/modifying/destroying these constructs
- */
-
-typedef enum { FIXNUM } object_t;
-
-typedef struct object
-{
-    object_t type;
-    union 
-    {
-        struct 
-        {
-            long value;
-        } fixnum;
-    } data;
-} object;
+#include "scum.h"
 
 object*
 alloc_object (void)
@@ -44,13 +22,24 @@ make_fixnum (long value)
     return obj;
 }
 
-bool 
-is_fixnum (object *obj)
+object*
+make_boolean (bool value)
 {
-    return obj->type == FIXNUM;
+    object *obj = alloc_object ();
+    obj->type = BOOLEAN;
+    obj->data.boolean.value = value;
+    return obj;
+} 
+
+object*
+make_character (char value)
+{
+    object *obj = alloc_object ();
+    obj->type = CHARACTER;
+    obj->data.character.value = value;
+    return obj;
 }
 
-/* All functions required to read from files for interpreting */
 bool 
 is_delimiter (int c)
 {
@@ -87,6 +76,56 @@ rem_whitespace (FILE *in)
     }
 }
 
+bool
+is_next_input (FILE *in, char *input)
+{
+   int input_len = strlen (input);
+   char buf[input_len];
+   int i = 0;
+
+   while ((buf[i] = getc (in)) != EOF && *input != '\0')
+   {
+       if(buf[i] != *input)
+       {
+           break;
+       }
+       i++;
+       input++;
+   }
+   if(*input == '\0')
+       return true;
+   //pop input back to stdin
+   while(i >= 0)
+   {
+       ungetc (buf[i], in);
+       i--;
+   }
+   return false;
+}
+    
+char
+read_character (FILE *in)
+{
+    int c;
+    c = getc (in);
+    if (c == EOF || c == '\n')
+    {
+        fprintf (stderr, "Premature EOF\n");
+        exit (1);
+    }
+    if (c == 's' && is_next_input (in, "pace"))
+        return ' ';
+    else if (c == 'n' && is_next_input (in, "ewline"))
+        return '\n';
+
+    if (!is_delimiter (peek (in)))
+    {
+        fprintf (stderr, "No delimiter\n");
+        exit (1);
+    }
+    return c;
+}
+
 object*
 read (FILE *in)
 {
@@ -96,6 +135,23 @@ read (FILE *in)
 
     rem_whitespace (in);
     c = getc (in);
+    
+    if (c == '#')
+    {
+        c = getc (in);
+        if (c == 't')
+            return make_boolean (true);
+        else if (c == 'f')
+            return make_boolean (false);
+        else if (c == '\\')
+            return make_character (read_character (in));
+        else
+        {
+            fprintf (stderr, "Unknown boolean literal %c\n", c);
+            exit (1);
+        }
+    }
+
     if (isdigit (c) || (c == '-' && isdigit (peek (in))))
     {
         if (c == '-')
@@ -118,11 +174,11 @@ read (FILE *in)
     }
     else
     {
-        fprintf(stderr, "Bad input, unexpected %c\n", c);
+        fprintf (stderr, "Bad input, unexpected %c\n", c);
         exit (1);
     }
 
-    fprintf(stderr, "read illegal state\n");
+    fprintf (stderr, "read illegal state\n");
     exit (1);
 }
 
@@ -140,6 +196,15 @@ write (object *obj)
         case FIXNUM:
             printf ("%ld", obj->data.fixnum.value);
             break;
+        case BOOLEAN:
+            if (obj->data.boolean.value)
+                printf("#t");
+            else
+                printf("#f");
+            break;
+        case CHARACTER:
+            printf("%c", obj->data.character.value);
+            break;
         default:
             fprintf (stderr, "Unknown type\n");
             exit (1);
@@ -153,7 +218,7 @@ main()
     printf ("Welcome to Scum, the shitty Scheme interpreter!\n");
     while (1)
     {
-        printf ("# ");
+        printf ("> ");
         write (eval (read (stdin)));
         printf ("\n");
     }
