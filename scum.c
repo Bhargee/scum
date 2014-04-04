@@ -40,6 +40,21 @@ make_character (char value)
     return obj;
 }
 
+object*
+make_string (char* value)
+{
+    object *obj = alloc_object ();
+    obj->type = STRING;
+    obj->data.string.value = (char*) malloc(strlen(value)+1);
+    if (obj->data.string.value == NULL)
+    {
+        fprintf (stderr, "no more memory");
+        exit (1);
+    }
+    strcpy (obj->data.string.value, value);
+    return obj;
+}
+
 bool 
 is_delimiter (int c)
 {
@@ -94,7 +109,6 @@ is_next_input (FILE *in, char *input)
    }
    if(*input == '\0')
        return true;
-   //pop input back to stdin
    while(i >= 0)
    {
        ungetc (buf[i], in);
@@ -126,6 +140,23 @@ read_character (FILE *in)
     return c;
 }
 
+void
+read_string (FILE* in, char* buf)
+{
+    int c;
+    while ((c = getc (in)) != EOF)
+    {
+        if (c == '"')
+        {
+            *buf++ = '\0';
+            return;
+        }
+        *buf++ = c;
+    }
+    fprintf (stderr, "Non terminated string literal ending with %c\n", c);
+    exit (1);
+}
+
 object*
 read (FILE *in)
 {
@@ -152,7 +183,14 @@ read (FILE *in)
         }
     }
 
-    if (isdigit (c) || (c == '-' && isdigit (peek (in))))
+    else if (c == '"')
+    {
+        char buf[MAX_STRING_LEN];
+        read_string (in, buf);
+        return make_string (buf);
+    }
+
+    else if (isdigit (c) || (c == '-' && isdigit (peek (in))))
     {
         if (c == '-')
             sign = -1;
@@ -204,6 +242,9 @@ write (object *obj)
             break;
         case CHARACTER:
             printf("%c", obj->data.character.value);
+            break;
+        case STRING:
+            printf("%s", obj->data.string.value);
             break;
         default:
             fprintf (stderr, "Unknown type\n");

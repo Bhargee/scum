@@ -4,8 +4,10 @@
 #include <string.h>
 #include <stdbool.h>
 
+#define MAX_STRING_LEN 1000
+
 /* Internal representation of Scheme objects/data */
-typedef enum { FIXNUM, BOOLEAN, CHARACTER } object_t;
+typedef enum { FIXNUM, BOOLEAN, CHARACTER, STRING } object_t;
 
 typedef struct object
 {
@@ -24,6 +26,10 @@ typedef struct object
         {
             char value;
         } character;
+        struct
+        {
+            char *value;
+        } string;
     } data;
 } object;
 
@@ -34,12 +40,14 @@ void rem_whitespace (FILE*);
 bool is_next_input (FILE*, char*);
 char read_character (FILE*);
 object *read(FILE*);
+void read_string (FILE*, char*);
 
 /* Functions to create IR structures from string file input */
 object *alloc_object (void);
 object *make_fixnum (long);
 object *make_boolean (bool);
 object *make_character (char);
+object *make_string (char*);
 
 /* Functions used to evaluate Scheme code */
 object *eval (object*);
@@ -47,3 +55,5 @@ object *eval (object*);
 /* Functions used to write back to user */
 void write (object*);
 
+/* Junk, to be deleted */
+void test (void);
