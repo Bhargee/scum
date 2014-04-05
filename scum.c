@@ -25,10 +25,9 @@ make_fixnum (long value)
 object*
 make_boolean (bool value)
 {
-    object *obj = alloc_object ();
-    obj->type = BOOLEAN;
-    obj->data.boolean.value = value;
-    return obj;
+    if (value)
+        return t;
+    return f;
 } 
 
 object*
@@ -145,7 +144,7 @@ read_string (FILE* in, char* buf)
 {
     int c;
     int i = 0;
-    while ((c = getc (in)) != EOF)
+    while ((c = getc (in)) != EOF && i < MAX_STRING_LEN)
     {
        if (c == '"')
         {
@@ -167,7 +166,7 @@ read_string (FILE* in, char* buf)
         }
         buf[i++] = c;
     }
-    fprintf (stderr, "Reached EOF %c\n", c);
+    fprintf (stderr, "Reached EOF or exceeded string max limit\n");
     exit (1);
 }
 
@@ -185,9 +184,9 @@ read (FILE *in)
     {
         c = getc (in);
         if (c == 't')
-            return make_boolean (true);
+            return t;
         else if (c == 'f')
-            return make_boolean (false);
+            return f;
         else if (c == '\\')
             return make_character (read_character (in));
         else
@@ -267,9 +266,22 @@ write (object *obj)
     }
 }
 
+void
+make_singletons (void)
+{
+    t = alloc_object();
+    t->type = BOOLEAN;
+    t->data.boolean.value = true;
+    f = alloc_object();
+    f->type = BOOLEAN;
+    f->data.boolean.value = false;
+
+}
+
 int 
 main()
 {
+    make_singletons ();
     printf ("Welcome to Scum, the shitty Scheme interpreter!\n");
     while (1)
     {

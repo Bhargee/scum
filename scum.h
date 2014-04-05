@@ -54,3 +54,7 @@ object *eval (object*);
 
 /* Functions used to write back to user */
 void write (object*);
+
+void make_singletons (void);
+
+static object *t, *f, *nil;
