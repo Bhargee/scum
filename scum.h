@@ -54,6 +54,3 @@ object *eval (object*);
 
 /* Functions used to write back to user */
 void write (object*);
-
-/* Junk, to be deleted */
-void test (void);

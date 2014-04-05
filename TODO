@@ -1,0 +1,5 @@
+### Design fixes
++ Make booleans singleton objects
++ fix possibility of string buffer overflow when readin strings > 100 chars long
+
+### Upcoming

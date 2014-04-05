@@ -144,16 +144,30 @@ void
 read_string (FILE* in, char* buf)
 {
     int c;
+    int i = 0;
     while ((c = getc (in)) != EOF)
     {
-        if (c == '"')
+       if (c == '"')
         {
-            *buf++ = '\0';
+            buf[i++] = '\0';
             return;
         }
-        *buf++ = c;
+
+       if (c == '\\')
+        {
+            c = getc (in);
+            if (c == 'n')
+                c = '\n';
+            else if (c == '"')
+                c = '"';
+            else if (c == 't')
+                c = '\t';
+            else if (c == '\\')
+                c = '\\';
+        }
+        buf[i++] = c;
     }
-    fprintf (stderr, "Non terminated string literal ending with %c\n", c);
+    fprintf (stderr, "Reached EOF %c\n", c);
     exit (1);
 }
 
