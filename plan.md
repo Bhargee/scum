@@ -1,6 +1,6 @@
 ##### Week 1: Data Types and parsing
 + ~~Fixnums, Chars, Bools, Strings~~
-+ Pairs
++ ~~Pairs~~
 + Consing of pairs into lists
 + Parser (handwritten)
 + symbol table (linked list or hash table)

@@ -53,6 +53,38 @@ make_string (char* value)
     strcpy (obj->data.string.value, value);
     return obj;
 }
+   
+object*
+cons (object *car, object *cdr)
+{
+    object *obj = alloc_object ();
+    obj->type = PAIR;
+    obj->data.pair.car = car;
+    obj->data.pair.cdr = cdr;
+    return obj;
+}
+
+object*
+car (object *pair)
+{
+    if (pair->type != PAIR)
+    {
+        fprintf (stderr, "Object is not a list\n");
+        exit (1);
+    }
+    return pair->data.pair.car;
+}
+
+object*
+cdr (object *pair)
+{
+    if (pair->type != PAIR)
+    {
+        fprintf (stderr, "Object is not a list\n");
+        exit (1);
+    }
+    return pair->data.pair.cdr;
+}
 
 bool 
 is_delimiter (int c)
@@ -173,6 +205,26 @@ read_string (FILE* in, char* buf)
 }
 
 object*
+read_list (FILE* in)
+{
+    int c;
+    object *car;
+    object *cdr;
+
+    rem_whitespace (in);
+    
+    if ((c = getc (in)) == ')')
+        return nil;
+    ungetc (c, in);
+    car = read (in);
+
+    rem_whitespace (in);
+    
+    cdr = read_list (in);
+    return cons (car, cdr);
+}
+
+object*
 read (FILE *in)
 {
     int c;
@@ -205,10 +257,9 @@ read (FILE *in)
         return make_string (buf);
     }
 
-    else if (c == '(' && peek (in) == ')')
+    else if (c == '(')
     {
-        getc (in);
-        return nil;
+        return read_list (in);
     }
 
     else if (isdigit (c) || (c == '-' && isdigit (peek (in))))
@@ -231,6 +282,8 @@ read (FILE *in)
             exit (1);
         }
     }
+    else if (c == EOF)
+        exit (0);
     else
     {
         fprintf (stderr, "Bad input, unexpected %c\n", c);
@@ -270,11 +323,33 @@ write (object *obj)
         case NIL:
             printf("()");
             break;
+        case PAIR:
+            printf ("(");
+            write_list (obj);
+            printf (")");
+            break;
         default:
             fprintf (stderr, "Unknown type\n");
             exit (1);
             break;
     }
+}
+
+void
+write_list (object* list)
+{
+    if (list->type == NIL)
+        return;
+
+    if (list->type != PAIR)
+    {
+        fprintf (stderr, "passed an atom to write list\n");
+        write(list);
+        exit(1);
+    }
+    write (list->data.pair.car);
+    printf (" ");
+    write_list (list->data.pair.cdr);
 }
 
 void
@@ -289,20 +364,26 @@ make_singletons (void)
 
     nil = alloc_object();
     nil->type = NIL;
-
 }
 
 int 
-main()
+main(int argc, char **argv)
 {
+    FILE *file = stdin;
     int instr_count = 1;
+    if (argc > 1)
+    {
+        file = fopen (argv[1], "r");
+    }
+    
     make_singletons ();
     printf ("Welcome to Scum, the shitty Scheme interpreter!\n");
     while (1)
     {
         printf ("%d> ", instr_count++);
-        write (eval (read (stdin)));
+        write (eval (read (file)));
         printf ("\n");
     }
+    fclose (file);
     return 0;
 }
