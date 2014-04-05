@@ -203,6 +203,12 @@ read (FILE *in)
         return make_string (buf);
     }
 
+    else if (c == '(' && peek (in) == ')')
+    {
+        getc (in);
+        return nil;
+    }
+
     else if (isdigit (c) || (c == '-' && isdigit (peek (in))))
     {
         if (c == '-')
@@ -259,6 +265,9 @@ write (object *obj)
         case STRING:
             printf("%s", obj->data.string.value);
             break;
+        case NIL:
+            printf("()");
+            break;
         default:
             fprintf (stderr, "Unknown type\n");
             exit (1);
@@ -275,6 +284,9 @@ make_singletons (void)
     f = alloc_object();
     f->type = BOOLEAN;
     f->data.boolean.value = false;
+
+    nil = alloc_object();
+    nil->type = NIL;
 
 }
 

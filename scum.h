@@ -7,7 +7,7 @@
 #define MAX_STRING_LEN 1000
 
 /* Internal representation of Scheme objects/data */
-typedef enum { FIXNUM, BOOLEAN, CHARACTER, STRING } object_t;
+typedef enum { FIXNUM, BOOLEAN, CHARACTER, STRING, NIL } object_t;
 
 typedef struct object
 {
