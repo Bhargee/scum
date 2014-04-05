@@ -163,6 +163,8 @@ read_string (FILE* in, char* buf)
                 c = '\t';
             else if (c == '\\')
                 c = '\\';
+            else if (c == 'a')
+                c = '\a';
         }
         buf[i++] = c;
     }
@@ -293,11 +295,12 @@ make_singletons (void)
 int 
 main()
 {
+    int instr_count = 1;
     make_singletons ();
     printf ("Welcome to Scum, the shitty Scheme interpreter!\n");
     while (1)
     {
-        printf ("> ");
+        printf ("%d> ", instr_count++);
         write (eval (read (stdin)));
         printf ("\n");
     }
