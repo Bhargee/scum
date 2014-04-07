@@ -205,7 +205,7 @@ read_string (FILE* in, char* buf)
 }
 
 object*
-read_list (FILE* in)
+read_pair (FILE* in)
 {
     int c;
     object *car;
@@ -220,7 +220,7 @@ read_list (FILE* in)
 
     rem_whitespace (in);
     
-    cdr = read_list (in);
+    cdr = read_pair (in);
     return cons (car, cdr);
 }
 
@@ -259,7 +259,7 @@ read (FILE *in)
 
     else if (c == '(')
     {
-        return read_list (in);
+        return read_pair (in);
     }
 
     else if (isdigit (c) || (c == '-' && isdigit (peek (in))))
@@ -318,14 +318,14 @@ write (object *obj)
             printf("%c", obj->data.character.value);
             break;
         case STRING:
-            printf("%s", obj->data.string.value);
+            printf("\"%s\"", obj->data.string.value);
             break;
         case NIL:
             printf("()");
             break;
         case PAIR:
             printf ("(");
-            write_list (obj);
+            write_pair (obj);
             printf (")");
             break;
         default:
@@ -336,7 +336,7 @@ write (object *obj)
 }
 
 void
-write_list (object* list)
+write_pair (object* list)
 {
     if (list->type == NIL)
         return;
@@ -349,7 +349,7 @@ write_list (object* list)
     }
     write (list->data.pair.car);
     printf (" ");
-    write_list (list->data.pair.cdr);
+    write_pair (list->data.pair.cdr);
 }
 
 void

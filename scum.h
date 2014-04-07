@@ -77,7 +77,7 @@ bool is_next_input (FILE*, char*);
 char read_character (FILE*);
 object *read(FILE*);
 void read_string (FILE*, char*);
-object *read_list (FILE*);
+object *read_pair (FILE*);
 
 /* Functions to create IR structures from string file input */
 object *alloc_object (void);
@@ -91,7 +91,7 @@ object *eval (object*);
 
 /* Functions used to write back to user */
 void write (object*);
-void write_list (object*);
+void write_pair (object*);
 
 /* Functions for manipulating lists  */
 object *cons (object*, object*);
