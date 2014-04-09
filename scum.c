@@ -386,6 +386,48 @@ make_singletons (void)
     nil->type = NIL;
 }
 
+unsigned
+hash (char *s)
+{
+    unsigned hashval;
+    for (hashval = 0; *s != '\0'; s++)
+        hashval = *s + 31 * hashval;
+    return hashval % SYMBOL_TABLE_LEN;
+}
+
+object*
+lookup (char *val)
+{
+    object *e = symbol_table[hash(val)];
+    if (e == NULL)
+        return NULL;
+    return e;
+}
+
+void
+install (object *obj)
+{
+    if (lookup (obj->data.symbol.value) != NULL)
+        return;
+    symbol_table[hash(obj->data.symbol.value)] = obj;
+}
+
+object* 
+make_symbol (char *value)
+{
+    object *obj = alloc_object ();
+    obj->type = SYMBOL;
+    obj->data.symbol.value = (char*) malloc(strlen(value)+1);
+    if (obj->data.symbol.value == NULL)
+    {
+        fprintf (stderr, "no more memory");
+        exit (1);
+    }
+    strcpy (obj->data.symbol.value, value);
+    install (obj);
+    return obj;
+}
+
 int 
 main(int argc, char **argv)
 {

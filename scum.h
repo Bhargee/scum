@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 #define MAX_STRING_LEN 1000
+#define SYMBOL_TABLE_LEN 1000
 #define caar(obj)   car(car(obj))
 #define cadr(obj)   car(cdr(obj))
 #define cdar(obj)   cdr(car(obj))
@@ -36,7 +37,7 @@
 
 
 /* Internal representation of Scheme objects/data */
-typedef enum { PAIR, FIXNUM, BOOLEAN, CHARACTER, STRING, NIL } object_t;
+typedef enum { SYMBOL, PAIR, FIXNUM, BOOLEAN, CHARACTER, STRING, NIL } object_t;
 
 typedef struct object
 {
@@ -64,6 +65,10 @@ typedef struct object
             struct object *car;
             struct object *cdr;
         } pair;
+        struct
+        {
+            char *value;
+        } symbol;
     } data;
 } object;
 
@@ -97,6 +102,14 @@ void write_pair (object*);
 object *cons (object*, object*);
 object *car (object*);
 object *cdr (object*);
+
+/* Functions and data structures for managing the symbol table */
+unsigned hash (char *);
+object *lookup (char *);
+void install (object *);
+object *make_symbol (char *);
+
+static symbol *symbol_table[SYMBOL_TABLE_LEN];
 
 void make_singletons (void);
 
