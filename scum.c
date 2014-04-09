@@ -219,7 +219,25 @@ read_pair (FILE* in)
     car = read (in);
 
     rem_whitespace (in);
-    
+    c = getc (in);
+    if (c == '.')
+    {
+        if (!is_delimiter (peek (in)))
+        {
+            fprintf (stderr, "need a delimiter after dot op\n");
+            exit (1);
+        }
+        cdr = read (in);
+        rem_whitespace (in);
+        if ((c = getc (in)) != ')')
+        {
+            fprintf (stderr, "unmatched parenthesis\n");
+            exit (1);
+        }
+        return cons (car, cdr);
+    }
+        
+    ungetc (c, in);
     cdr = read_pair (in);
     return cons (car, cdr);
 }
@@ -336,20 +354,22 @@ write (object *obj)
 }
 
 void
-write_pair (object* list)
+write_pair (object* pair)
 {
-    if (list->type == NIL)
-        return;
+    object *cdr;
 
-    if (list->type != PAIR)
-    {
-        fprintf (stderr, "passed an atom to write list\n");
-        write(list);
-        exit(1);
+    write(pair->data.pair.car);
+    cdr = pair->data.pair.cdr;
+    if (cdr->type == PAIR) {
+        printf(" ");
+        write_pair(cdr);
     }
-    write (list->data.pair.car);
-    printf (" ");
-    write_pair (list->data.pair.cdr);
+    else if (cdr->type == NIL)
+        return;
+    else {
+        printf(" . ");
+        write(cdr);
+    }
 }
 
 void
