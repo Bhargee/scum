@@ -93,6 +93,12 @@ is_delimiter (int c)
                     || c == ';';
 }
 
+bool is_symbol_start (int c)
+{
+    return isalpha(c) || c == '*' || c == '/' || c == '>' ||
+             c == '<' || c == '=' || c == '?' || c == '!';
+}
+
 int 
 peek (FILE *in)
 {
@@ -300,6 +306,35 @@ read (FILE *in)
             exit (1);
         }
     }
+    else if (is_symbol_start (c) || ((c == '+' || c == '-') 
+             && is_delimiter (peek (in))))
+    {
+        int i = 1;
+        char buf[MAX_STRING_LEN];
+        buf[0] = c;
+        while ((c = getc (in)) != EOF && (is_symbol_start (c) 
+                || isdigit (c) || c == '+' || c == '-'))
+        {
+            if (i < MAX_STRING_LEN - 1)
+                buf[i++] = c;
+            else
+            {
+                fprintf (stderr, "symbol too long\n");
+                exit (1);
+            }
+        }
+        if (is_delimiter (c))
+        {
+            buf[i] = '\0';
+            ungetc (c, in);
+            return make_symbol (buf);
+        }
+        else
+        {
+            fprintf (stderr, "need to end symbol with delimiter\n");
+            exit (1);
+        }
+    }
     else if (c == EOF)
         exit (0);
     else
@@ -345,6 +380,9 @@ write (object *obj)
             printf ("(");
             write_pair (obj);
             printf (")");
+            break;
+        case SYMBOL:
+            printf ("%s", obj->data.symbol.value);
             break;
         default:
             fprintf (stderr, "Unknown type\n");

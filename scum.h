@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 #define MAX_STRING_LEN 1000
-#define SYMBOL_TABLE_LEN 1000
+#define SYMBOL_TABLE_LEN 100
 #define caar(obj)   car(car(obj))
 #define cadr(obj)   car(cdr(obj))
 #define cdar(obj)   cdr(car(obj))
@@ -72,8 +72,6 @@ typedef struct object
     } data;
 } object;
 
-typedef object symbol;
-
 /* Functions used to read input from files */
 bool is_delimiter (int);
 int peek (FILE*);
@@ -83,6 +81,7 @@ char read_character (FILE*);
 object *read(FILE*);
 void read_string (FILE*, char*);
 object *read_pair (FILE*);
+bool is_symbol_start (int);
 
 /* Functions to create IR structures from string file input */
 object *alloc_object (void);
@@ -109,7 +108,7 @@ object *lookup (char *);
 void install (object *);
 object *make_symbol (char *);
 
-static symbol *symbol_table[SYMBOL_TABLE_LEN];
+static object *symbol_table[SYMBOL_TABLE_LEN];
 
 void make_singletons (void);
 
