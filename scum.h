@@ -72,7 +72,7 @@ typedef struct object
     } data;
 } object;
 
-/* Functions used to read input from files */
+/* Functions used to read input from files ansd tokenize that input */
 bool is_delimiter (int);
 int peek (FILE*);
 void rem_whitespace (FILE*);
@@ -83,7 +83,7 @@ void read_string (FILE*, char*);
 object *read_pair (FILE*);
 bool is_symbol_start (int);
 
-/* Functions to create IR structures from string file input */
+/* Functions to create IR structures/tokens from string file input */
 object *alloc_object (void);
 object *make_fixnum (long);
 object *make_boolean (bool);

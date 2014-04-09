@@ -1,5 +1,13 @@
+/* 
+ * scum - a simple, bare bones, readable scheme interpreter (not garaunteed to
+ * be rsr5 compliant, but it does the job)
+ */
 #include "scum.h"
 
+/* Malloc wrapper for turning tokens into actual objects. Only creates the
+ * memory, does not set any values
+ * exits if no more memory can be found
+ */
 object*
 alloc_object (void)
 {
@@ -13,6 +21,9 @@ alloc_object (void)
     return obj;
 }
 
+/* The following functions wrap alloc_object and set the corresponding variables
+ * (TYPE and VALUE) to the correct balues
+ */
 object*
 make_fixnum (long value)
 {
@@ -54,6 +65,9 @@ make_string (char* value)
     return obj;
 }
    
+/* The followng 3 functions implement the cons, car, and cdr list operator for
+ * lists and pairs
+ */
 object*
 cons (object *car, object *cdr)
 {
@@ -86,6 +100,10 @@ cdr (object *pair)
     return pair->data.pair.cdr;
 }
 
+/* checks if a given character (passed in as an integer to accept the EOF) is a
+ * character the denotes the boundary between tokens. This is the meat of our
+ * pseudo tokenization
+ */
 bool 
 is_delimiter (int c)
 {
@@ -93,12 +111,18 @@ is_delimiter (int c)
                     || c == ';';
 }
 
+/* checks if a given character is the beginning of a valid symbol, rather than
+ * another data type
+ */
 bool is_symbol_start (int c)
 {
     return isalpha(c) || c == '*' || c == '/' || c == '>' ||
              c == '<' || c == '=' || c == '?' || c == '!';
 }
 
+/* checks the next character in the input stream without removing it from the
+ * stream
+ */
 int 
 peek (FILE *in)
 {
@@ -108,6 +132,9 @@ peek (FILE *in)
     return value;
 }
 
+/* removes whitespace, used to ignore whitespace at the beginning of input and
+ * in pairs
+ */
 void 
 rem_whitespace (FILE *in)
 {
@@ -128,6 +155,10 @@ rem_whitespace (FILE *in)
     }
 }
 
+/* Retursn whether or not the next characters in input match INPUT. If they do,
+ * those characters are removed from the stream, and if not, they are put back
+ * (the stream doesn't change if the function returns false
+ */
 bool
 is_next_input (FILE *in, char *input)
 {
@@ -154,6 +185,9 @@ is_next_input (FILE *in, char *input)
    return false;
 }
     
+/* Reads a scheme character (delimited with #\), used for tokenization of all
+ * character literals
+ */
 char
 read_character (FILE *in)
 {
@@ -177,6 +211,7 @@ read_character (FILE *in)
     return c;
 }
 
+/* tokenizes string literals */
 void
 read_string (FILE* in, char* buf)
 {
@@ -210,6 +245,9 @@ read_string (FILE* in, char* buf)
     exit (1);
 }
 
+/* Reads lists and improper lists (pairs) of arbitrary length and composition.
+ * Used to tokenize lists, mutually recursive with the read function
+ */
 object*
 read_pair (FILE* in)
 {
@@ -248,6 +286,7 @@ read_pair (FILE* in)
     return cons (car, cdr);
 }
 
+/* Tokenizer function that calls case specific tokenizers and handles errors */
 object*
 read (FILE *in)
 {
@@ -350,6 +389,9 @@ read (FILE *in)
     exit (1);
 }
 
+/* Evaluator of scheme expressions. Self evaluating atoms are returned as is,
+ * while tokens representing operators are applied to arguments 
+ */
 object*
 eval (object *exp)
 {
@@ -366,6 +408,9 @@ eval (object *exp)
 
 }
 
+/* checks if a given EXP contains the specified SYMBOL in its car position, used
+ * to figure out operator application in scheme
+ */
 bool
 has_symbol (object *symbol, object *exp)
 {
@@ -373,6 +418,7 @@ has_symbol (object *symbol, object *exp)
             && (car (exp)) == symbol);
 }
 
+/* writes back evaluated expressions based on the returned data type */
 void
 write (object *obj)
 {
@@ -411,6 +457,8 @@ write (object *obj)
     }
 }
 
+/* Used to wrote improper and proper lists of arbitrary length and composition,
+ * mutually recursove with write*/
 void
 write_pair (object* pair)
 {
@@ -429,7 +477,10 @@ write_pair (object* pair)
         write(cdr);
     }
 }
-
+/* creates all the global objects (the boolean literals for true and false, the
+ * empty list, and operator symbols) so we don't waste memory creates new copies
+ * of objects that represent keywords
+ */
 void
 make_singletons (void)
 {
@@ -446,6 +497,9 @@ make_singletons (void)
     quote = make_symbol ("quote");
 }
 
+/* The following functions are used in the symbol table, a chained hash map of
+ * symbols
+ */
 unsigned
 hash (char *s)
 {
