@@ -92,6 +92,7 @@ object *make_string (char*);
 
 /* Functions used to evaluate Scheme code */
 object *eval (object*);
+bool has_symbol (object*, object*);
 
 /* Functions used to write back to user */
 void write (object*);
@@ -117,4 +118,4 @@ static symbol_table_entry *symbol_table[SYMBOL_TABLE_LEN];
 
 void make_singletons (void);
 
-static object *t, *f, *nil;
+static object *t, *f, *nil, *quote;

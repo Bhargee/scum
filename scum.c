@@ -281,6 +281,9 @@ read (FILE *in)
         return make_string (buf);
     }
 
+    else if (c == '\'')
+        return cons (quote, cons (read (in), nil));
+
     else if (c == '(')
     {
         return read_pair (in);
@@ -348,9 +351,26 @@ read (FILE *in)
 }
 
 object*
-eval (object *obj)
+eval (object *exp)
 {
-    return obj;
+    object_t t = exp->type;
+    if (t == BOOLEAN || t == FIXNUM || t == CHARACTER || t == STRING)
+        return exp;
+    else if (has_symbol (quote, exp))
+        return cadr (exp);
+    else
+    {
+        fprintf (stderr, "expression has unknown type");
+        exit (1);
+    }
+
+}
+
+bool
+has_symbol (object *symbol, object *exp)
+{
+    return (exp->type == PAIR && (car (exp))->type == SYMBOL 
+            && (car (exp)) == symbol);
 }
 
 void
@@ -422,6 +442,8 @@ make_singletons (void)
 
     nil = alloc_object();
     nil->type = NIL;
+
+    quote = make_symbol ("quote");
 }
 
 unsigned
@@ -470,6 +492,9 @@ install (object *obj)
 object* 
 make_symbol (char *value)
 {
+    symbol_table_entry *e = lookup (value);
+    if (e != NULL && strcmp(e->object->data.symbol.value, value) == 0)
+        return e->object;
     object *obj = alloc_object ();
     obj->type = SYMBOL;
     obj->data.symbol.value = (char*) malloc(strlen(value)+1);
