@@ -1,3 +1,4 @@
 scum
 .*.swp
 *.scm
+*.dSYM

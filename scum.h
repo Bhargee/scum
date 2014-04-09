@@ -103,12 +103,17 @@ object *car (object*);
 object *cdr (object*);
 
 /* Functions and data structures for managing the symbol table */
+typedef struct symbol_table_entry
+{
+    object *object;
+    struct symbol_table_entry *next;
+} symbol_table_entry;
 unsigned hash (char *);
-object *lookup (char *);
-void install (object *);
+symbol_table_entry *lookup (char *);
+symbol_table_entry *install (object *);
 object *make_symbol (char *);
 
-static object *symbol_table[SYMBOL_TABLE_LEN];
+static symbol_table_entry *symbol_table[SYMBOL_TABLE_LEN];
 
 void make_singletons (void);
 

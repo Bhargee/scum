@@ -4,7 +4,7 @@ object*
 alloc_object (void)
 {
     object *obj;
-    obj = malloc (sizeof *obj);
+    obj = (object *)malloc (sizeof *obj);
     if (obj == NULL)
     {
         fprintf (stderr, "We've run out of memory!\n");
@@ -433,21 +433,38 @@ hash (char *s)
     return hashval % SYMBOL_TABLE_LEN;
 }
 
-object*
+symbol_table_entry*
 lookup (char *val)
 {
-    object *e = symbol_table[hash(val)];
-    if (e == NULL)
-        return NULL;
-    return e;
+    symbol_table_entry *e = symbol_table[hash(val)];
+    while (e != NULL)
+    {
+        if (strcmp(e->object->data.symbol.value, val) == 0)
+            return e;
+        e = e->next;
+    }
+    return NULL;
 }
 
-void
+symbol_table_entry*
 install (object *obj)
 {
-    if (lookup (obj->data.symbol.value) != NULL)
-        return;
-    symbol_table[hash(obj->data.symbol.value)] = obj;
+    unsigned hashval;
+    symbol_table_entry *e = lookup (obj->data.symbol.value);
+    if (e == NULL)
+    {
+        e = (symbol_table_entry *)malloc (sizeof (symbol_table_entry));
+        if (e == NULL)
+            return NULL;
+        e->object = obj;
+        hashval = hash (obj->data.symbol.value);
+        e->next = symbol_table[hashval];
+        symbol_table[hashval] = e;
+    }
+    else
+        free (e->object);
+    e->object = obj;
+    return e;
 }
 
 object* 
