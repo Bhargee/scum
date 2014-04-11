@@ -5,7 +5,7 @@
 + ~~Parser (handwritten)~~
 + ~~symbol table (linked list or hash table)~~ (TODO allow for duplicates rep as
 separate symbols)
-+ quote operator (makes scum a real interpreter)
++ ~~quote operator (makes scum a real interpreter)~~
 
 ##### Week 2: Env and vars
 + Global environment and state
