@@ -562,24 +562,25 @@ make_symbol (char *value)
     return obj;
 }
 
-int 
-main(int argc, char **argv)
+void
+interpret(FILE *in, bool silent)
 {
-    FILE *file = stdin;
     int instr_count = 1;
-    if (argc > 1)
-    {
-        file = fopen (argv[1], "r");
-    }
-    
     make_singletons ();
-    printf ("Welcome to Scum, the shitty Scheme interpreter!\n");
+    if (!silent)
+        printf ("Welcome to Scum, the shitty Scheme interpreter!\n");
     while (1)
     {
-        printf ("%d> ", instr_count++);
-        write (eval (read (file)));
-        printf ("\n");
+        if (!silent)
+        {
+            printf ("%d> ", instr_count++);
+            write (eval (read (in)));
+            printf ("\n");
+        }
+        else
+        {
+            eval (read (in));
+        }
     }
-    fclose (file);
-    return 0;
+    fclose (in);
 }

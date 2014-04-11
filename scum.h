@@ -1,3 +1,6 @@
+#ifndef _SCUM_C
+#define _SCUM_C
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -118,4 +121,7 @@ static symbol_table_entry *symbol_table[SYMBOL_TABLE_LEN];
 
 void make_singletons (void);
 
+void interpret (FILE *, bool);
+
 static object *t, *f, *nil, *quote;
+#endif
