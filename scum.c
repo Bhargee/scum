@@ -198,6 +198,8 @@ read_character (FILE *in)
         fprintf (stderr, "Premature EOF\n");
         exit (1);
     }
+    /* This conditional detects the special scheme newline and space characters
+     * */
     if (c == 's' && is_next_input (in, "pace"))
         return ' ';
     else if (c == 'n' && is_next_input (in, "ewline"))
@@ -497,6 +499,7 @@ make_singletons (void)
     quote = make_symbol ("quote");
 }
 
+
 /* The following functions are used in the symbol table, a chained hash map of
  * symbols
  */
@@ -567,6 +570,7 @@ interpret(FILE *in, bool silent)
 {
     int instr_count = 1;
     make_singletons ();
+    setup_env();
     if (!silent)
         printf ("Welcome to Scum, the shitty Scheme interpreter!\n");
     while (1)
@@ -583,4 +587,50 @@ interpret(FILE *in, bool silent)
         }
     }
     fclose (in);
+}
+
+binding*
+make_binding (object *var, object *val)
+{
+    binding *b;
+    b = malloc (sizeof *b);
+    if (b == NULL)
+    {
+        fprintf (stderr, "Not enough memory\n");
+        exit (1);
+    }
+    b->var = var;
+    b->val = val;
+    b->next = NULL;
+    return b;
+}
+
+frame*
+make_frame (binding *binding)
+{
+    frame *f;
+    f = malloc (sizeof *f);
+    if (f == NULL)
+    {
+        fprintf (stderr, "Not enough memory\n");
+        exit (1);
+    }
+    f->bindings = binding;
+    f->enclosing_env = NULL;
+    return f;
+}
+
+void
+setup_env (void)
+{
+    curr_frame = global_frame;
+}
+
+void
+add_binding (binding *new_binding, frame *f)
+{
+    binding *prev_bindings = f->bindings;
+    while (prev_bindings->next != NULL)
+        prev_bindings = prev_bindings->next;
+    prev_bindings->next = new_binding;
 }

@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdbool.h>
+#include <assert.h>
 
 #define MAX_STRING_LEN 1000
 #define SYMBOL_TABLE_LEN 100
@@ -123,5 +124,23 @@ void make_singletons (void);
 
 void interpret (FILE *, bool);
 
+typedef struct binding
+{
+    object *var, *val;
+    struct binding *next;
+} binding;
+
+typedef struct frame
+{
+    struct frame *enclosing_env;
+    binding *bindings;
+} frame;
+
+void setup_env (void);
+frame *make_frame (binding *);
+binding *make_binding (object *, object *);
+void add_binding (binding *, frame *);
+
 static object *t, *f, *nil, *quote;
+static frame *global_frame, *curr_frame;
 #endif
