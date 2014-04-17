@@ -395,13 +395,17 @@ read (FILE *in)
  * while tokens representing operators are applied to arguments 
  */
 object*
-eval (object *exp)
+eval (object *exp, frame *env)
 {
     object_t t = exp->type;
     if (t == BOOLEAN || t == FIXNUM || t == CHARACTER || t == STRING)
         return exp;
     else if (has_symbol (quote, exp))
         return cadr (exp);
+    else if (has_symbol (define, exp))
+        return define_variable (exp, env);
+    else if (t == SYMBOL)
+        return lookup_variable_value (exp, env);
     else
     {
         fprintf (stderr, "expression has unknown type");
@@ -497,6 +501,9 @@ make_singletons (void)
     nil->type = NIL;
 
     quote = make_symbol ("quote");
+    define = make_symbol ("define");
+    set = make_symbol ("set!");
+    ok = make_symbol ("ok");
 }
 
 
@@ -578,12 +585,12 @@ interpret(FILE *in, bool silent)
         if (!silent)
         {
             printf ("%d> ", instr_count++);
-            write (eval (read (in)));
+            write (eval (read (in), curr_frame));
             printf ("\n");
         }
         else
         {
-            eval (read (in));
+            eval (read (in), curr_frame);
         }
     }
     fclose (in);
@@ -633,4 +640,38 @@ add_binding (binding *new_binding, frame *f)
     while (prev_bindings->next != NULL)
         prev_bindings = prev_bindings->next;
     prev_bindings->next = new_binding;
+}
+
+object*
+define_variable (object *exp, frame *env)
+{
+    object *def_var = cadr (exp);
+    object *def_val = eval (caddr (exp), env);
+    binding *b = make_binding (def_var, def_val);
+    if (curr_frame == NULL)
+        curr_frame = make_frame (b);
+    else
+        add_binding (b, env);
+
+    return ok;
+
+}
+
+object*
+lookup_variable_value (object *exp, frame *env)
+{
+   frame *curr = env;
+   while ( curr != NULL)
+   {
+       binding *b = curr->bindings;
+       while (b != NULL)
+       {
+           if (strcmp (exp->data.symbol.value, b->var->data.symbol.value) == 0)
+               return b->val;
+           b = b->next;
+       }
+       curr = curr->enclosing_env;
+   }
+   fprintf(stderr, "unbound variable\n");
+   exit(1);
 }

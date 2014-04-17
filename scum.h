@@ -76,6 +76,25 @@ typedef struct object
     } data;
 } object;
 
+typedef struct binding
+{
+    object *var, *val;
+    struct binding *next;
+} binding;
+
+typedef struct frame
+{
+    struct frame *enclosing_env;
+    binding *bindings;
+} frame;
+
+void setup_env (void);
+frame *make_frame (binding *);
+binding *make_binding (object *, object *);
+void add_binding (binding *, frame *);
+object *lookup_variable_value (object *, frame *);
+object *define_variable (object *, frame *);
+
 /* Functions used to read input from files ansd tokenize that input */
 bool is_delimiter (int);
 int peek (FILE*);
@@ -95,7 +114,7 @@ object *make_character (char);
 object *make_string (char*);
 
 /* Functions used to evaluate Scheme code */
-object *eval (object*);
+object *eval (object*, frame *);
 bool has_symbol (object*, object*);
 
 /* Functions used to write back to user */
@@ -124,23 +143,6 @@ void make_singletons (void);
 
 void interpret (FILE *, bool);
 
-typedef struct binding
-{
-    object *var, *val;
-    struct binding *next;
-} binding;
-
-typedef struct frame
-{
-    struct frame *enclosing_env;
-    binding *bindings;
-} frame;
-
-void setup_env (void);
-frame *make_frame (binding *);
-binding *make_binding (object *, object *);
-void add_binding (binding *, frame *);
-
-static object *t, *f, *nil, *quote;
+static object *t, *f, *nil, *quote, *define, *set, *ok;
 static frame *global_frame, *curr_frame;
 #endif
