@@ -1,6 +1,6 @@
 CFLAGS=-Wall -std=c99 -pedantic -g
 
-all: scum check
+all: scum 
 
 check: check_scum.c scum.o
 	cc $(CFLAGS) -o check_scum check_scum.c scum.o -lcheck
