@@ -76,6 +76,9 @@ typedef struct object
     } data;
 } object;
 
+/* Functions and data structures used to create variables in scopes
+ * (collectively called the environment )
+ */
 typedef struct binding
 {
     object *var, *val;
