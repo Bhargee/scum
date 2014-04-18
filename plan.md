@@ -8,9 +8,9 @@ separate symbols)
 + ~~quote operator (makes scum a real interpreter)~~
 
 ##### Week 2: Env and vars
-+ Global environment and state
-+ local variables (not garbage collected yet)
-+ define and set operators for above
++ ~~Global environment and state~~
++ ~~local variables (not garbage collected yet)~~
++ ~~define and set operators for above~~
 
 ##### Week 3: Control
 + If and cond

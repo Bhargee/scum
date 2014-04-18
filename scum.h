@@ -94,7 +94,7 @@ binding *make_binding (object *, object *);
 void add_binding (binding *, frame *);
 object *lookup_variable_value (object *, frame *);
 object *define_variable (object *, frame *);
-
+object *set_variable (object *, frame *);
 /* Functions used to read input from files ansd tokenize that input */
 bool is_delimiter (int);
 int peek (FILE*);

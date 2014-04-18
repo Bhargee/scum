@@ -404,6 +404,8 @@ eval (object *exp, frame *env)
         return cadr (exp);
     else if (has_symbol (define, exp))
         return define_variable (exp, env);
+    else if (has_symbol (set, exp))
+        return set_variable (exp, env);
     else if (t == SYMBOL)
         return lookup_variable_value (exp, env);
     else
@@ -684,6 +686,31 @@ lookup_variable_value (object *exp, frame *env)
        {
            if (strcmp (exp->data.symbol.value, b->var->data.symbol.value) == 0)
                return b->val;
+           b = b->next;
+       }
+       curr = curr->enclosing_env;
+   }
+   fprintf(stderr, "unbound variable\n");
+   exit(1);
+}
+
+object *
+set_variable (object *exp, frame *env)
+{
+   object *def_var = cadr (exp);
+   object *def_val = eval (caddr (exp), env);
+
+   frame *curr = env;
+   while ( curr != NULL)
+   {
+       binding *b = curr->bindings;
+       while (b != NULL)
+       {
+           if (strcmp (def_var->data.symbol.value, b->var->data.symbol.value) == 0)
+           {
+               b->val = def_val;
+               return ok;
+           }
            b = b->next;
        }
        curr = curr->enclosing_env;
