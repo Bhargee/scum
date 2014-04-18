@@ -651,10 +651,26 @@ define_variable (object *exp, frame *env)
     if (curr_frame == NULL)
         curr_frame = make_frame (b);
     else
-        add_binding (b, env);
+    {
+       frame *curr = env;
+       binding *b = curr->bindings;
+       binding *prev;
+       while (b != NULL)
+       {
+           if (strcmp (def_var->data.symbol.value, b->var->data.symbol.value) == 0)
+           {
+               //TODO free data during gc step
+               b->val = def_val;
+               return ok;
+           }
+           prev = b;
+           b = b->next;
+       }
+       prev->next = make_binding (def_var, def_val);
+
+    }
 
     return ok;
-
 }
 
 object*
