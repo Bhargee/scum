@@ -119,6 +119,7 @@ object *make_string (char*);
 /* Functions used to evaluate Scheme code */
 object *eval (object*, frame *);
 bool has_symbol (object*, object*);
+bool is_self_evaluating (object *);
 
 /* Functions used to write back to user */
 void write (object*);
@@ -146,6 +147,6 @@ void make_singletons (void);
 
 void interpret (FILE *, bool);
 
-static object *t, *f, *nil, *quote, *define, *set, *ok;
+static object *t, *f, *nil, *quote, *define, *set, *ok, *ifs;
 static frame *global_frame, *curr_frame;
 #endif

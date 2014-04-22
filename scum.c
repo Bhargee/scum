@@ -391,14 +391,22 @@ read (FILE *in)
     exit (1);
 }
 
+bool
+is_self_evaluating (object *o)
+{
+    object_t ty = o->type;
+    return (ty == BOOLEAN || ty == FIXNUM || ty == CHARACTER || ty == STRING);
+}
+
 /* Evaluator of scheme expressions. Self evaluating atoms are returned as is,
  * while tokens representing operators are applied to arguments 
  */
 object*
 eval (object *exp, frame *env)
 {
-    object_t t = exp->type;
-    if (t == BOOLEAN || t == FIXNUM || t == CHARACTER || t == STRING)
+
+tailcall:
+    if (is_self_evaluating (exp))
         return exp;
     else if (has_symbol (quote, exp))
         return cadr (exp);
@@ -406,14 +414,25 @@ eval (object *exp, frame *env)
         return define_variable (exp, env);
     else if (has_symbol (set, exp))
         return set_variable (exp, env);
-    else if (t == SYMBOL)
+    else if (has_symbol (ifs, exp))
+    {
+        object *if_predicate = cadr(exp);
+        object *if_consequent = caddr(exp);
+        object *if_alternative = (cadddr (exp) == nil)? f : cadddr(exp);
+        object *result = eval (if_predicate, env);
+        if (result != f)
+            exp = if_consequent;
+        else
+            exp = if_alternative;
+        goto tailcall;
+    }
+    else if (exp->type == SYMBOL)
         return lookup_variable_value (exp, env);
     else
     {
         fprintf (stderr, "expression has unknown type");
         exit (1);
     }
-
 }
 
 /* checks if a given EXP contains the specified SYMBOL in its car position, used
@@ -506,6 +525,7 @@ make_singletons (void)
     define = make_symbol ("define");
     set = make_symbol ("set!");
     ok = make_symbol ("ok");
+    ifs = make_symbol ("if");
 }
 
 
