@@ -418,7 +418,7 @@ tailcall:
     {
         object *if_predicate = cadr(exp);
         object *if_consequent = caddr(exp);
-        object *if_alternative = (cadddr (exp) == nil)? f : cadddr(exp);
+        object *if_alternative = (cdddr (exp) == nil)? f : cadddr(exp);
         object *result = eval (if_predicate, env);
         if (result != f)
             exp = if_consequent;
