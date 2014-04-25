@@ -169,7 +169,7 @@ sub_proc (object *arguments)
     long result;
     
     result = (car(arguments))->data.fixnum.value;
-    while (!(arguments = cdr(arguments))->type == NIL) {
+    while ((arguments = cdr(arguments))->type != NIL) {
         result -= (car(arguments))->data.fixnum.value;
     }
     return make_fixnum(result);
@@ -819,6 +819,7 @@ make_singletons (void)
     set = make_symbol ("set!");
     ok = make_symbol ("ok");
     ifs = make_symbol ("if");
+    //define_variable (plus, make_primitive_proc (add_proc), curr_frame);
 
     add_procedure("null?"     , is_null_proc);
     add_procedure("boolean?"  , is_boolean_proc);
