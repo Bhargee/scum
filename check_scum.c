@@ -68,6 +68,25 @@ START_TEST (test_read_string)
 }
 END_TEST
 
+START_TEST (test_lambda)
+{
+    FILE *f = fopen ("test_files/test_lambda.test", "r");
+    if (f == NULL)
+        ck_abort_msg ("file reading didn't work\n");
+    interpret (f, true);
+}
+END_TEST
+
+START_TEST (test_nested_lambda)
+{
+    FILE *f = fopen ("test_files/test_nested_lambda.test", "r");
+    if (f == NULL)
+        ck_abort_msg ("file reading didn't work\n");
+    interpret (f, true);
+
+}
+END_TEST
+
 Suite *
 scum_suite (void)
 {
@@ -80,6 +99,8 @@ scum_suite (void)
     tcase_add_test (tc_core, test_delim);
     tcase_add_test (tc_core, test_char_read);
     tcase_add_test (tc_core, test_read_string);
+    tcase_add_test (tc_core, test_lambda);
+    tcase_add_test (tc_core, test_nested_lambda);
     suite_add_tcase (s, tc_core);
 
     return s;
