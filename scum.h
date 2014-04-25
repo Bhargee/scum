@@ -39,6 +39,12 @@
 #define cdddar(obj) cdr(cdr(cdr(car(obj))))
 #define cddddr(obj) cdr(cdr(cdr(cdr(obj))))
 
+#define add_procedure(scheme_name, c_name)              \
+    define_variable(make_symbol(scheme_name),           \
+                    make_primitive_proc(c_name),        \
+                    curr_frame);
+
+
 
 /* Internal representation of Scheme objects/data */
 typedef enum { SYMBOL, PAIR, FIXNUM, BOOLEAN, CHARACTER, STRING, NIL, PRIM_PROC } object_t;
@@ -134,6 +140,8 @@ void write_pair (object*);
 object *cons (object*, object*);
 object *car (object*);
 object *cdr (object*);
+void set_car (object *, object *);
+void set_cdr (object *, object *);
 
 /* Functions and data structures for managing the symbol table */
 typedef struct symbol_table_entry

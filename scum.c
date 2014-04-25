@@ -66,13 +66,264 @@ make_string (char* value)
 }
 
 object*
-make_primitive_proc (object *(*fun)(struct object *arguments)) {
+make_primitive_proc (object *(*fun)(struct object *arguments))
+{
     object *obj;
 
     obj = alloc_object();
     obj->type = PRIM_PROC;
     obj->data.prim_proc.fun = fun;
     return obj;
+}
+
+object*
+is_null_proc (object *arguments)
+{
+    return (car(arguments))->type == NIL ? t : f;
+}
+
+object* 
+is_boolean_proc (object *arguments)
+{
+    return (car(arguments))->type == BOOLEAN ? t : f;
+}
+
+object* 
+is_symbol_proc (object *arguments)
+{
+    return (car(arguments))->type == SYMBOL ? t : f;
+}
+
+object* 
+is_integer_proc (object *arguments)
+{
+    return (car(arguments))->type == FIXNUM ? t : f;
+}
+
+object*
+is_char_proc (object *arguments)
+{
+    return (car(arguments))->type == CHARACTER ? t : f;
+}
+
+object*
+is_string_proc (object *arguments)
+{
+    return (car(arguments))->type == STRING ? t : f;
+}
+
+object*
+is_pair_proc (object *arguments)
+{
+    return (car(arguments))->type == PAIR ? t : f;
+}
+
+object*
+is_procedure_proc (object *arguments)
+{
+    return (car(arguments))->type == PRIM_PROC ? t : f;
+}
+
+object*
+char_to_integer_proc (object *arguments)
+{
+    return make_fixnum((car(arguments))->data.character.value);
+}
+
+object*
+integer_to_char_proc (object *arguments)
+{
+    return make_character((car(arguments))->data.fixnum.value);
+}
+
+object*
+number_to_string_proc (object *arguments)
+{
+    char buffer[100];
+
+    sprintf(buffer, "%ld", (car(arguments))->data.fixnum.value);
+    return make_string(buffer);
+}
+
+object*
+string_to_number_proc (object *arguments)
+{
+    return make_fixnum(atoi((car(arguments))->data.string.value));
+}
+
+object*
+symbol_to_string_proc (object *arguments)
+{
+    return make_string((car(arguments))->data.symbol.value);
+}
+
+object*
+string_to_symbol_proc (object *arguments)
+{
+    return make_symbol((car(arguments))->data.string.value);
+}
+
+object*
+sub_proc (object *arguments)
+{
+    long result;
+    
+    result = (car(arguments))->data.fixnum.value;
+    while (!(arguments = cdr(arguments))->type == NIL) {
+        result -= (car(arguments))->data.fixnum.value;
+    }
+    return make_fixnum(result);
+}
+
+object*
+mul_proc (object *arguments)
+{
+    long result = 1;
+    
+    while (!(arguments->type == NIL)) {
+        result *= (car(arguments))->data.fixnum.value;
+        arguments = cdr(arguments);
+    }
+    return make_fixnum(result);
+}
+
+object*
+quotient_proc (object *arguments)
+{
+    return make_fixnum(
+        ((car(arguments) )->data.fixnum.value)/
+        ((cadr(arguments))->data.fixnum.value));
+}
+
+object*
+remainder_proc (object *arguments)
+{
+    return make_fixnum(
+        ((car(arguments) )->data.fixnum.value)%
+        ((cadr(arguments))->data.fixnum.value));
+}
+
+object*
+is_number_equal_proc (object *arguments)
+{
+    long value;
+    
+    value = (car(arguments))->data.fixnum.value;
+    while (!(arguments = cdr(arguments))->type == NIL) {
+        if (value != ((car(arguments))->data.fixnum.value)) {
+            return f;
+        }
+    }
+    return t;
+}
+
+object*
+is_less_than_proc (object *arguments)
+{
+    long previous;
+    long next;
+    
+    previous = (car(arguments))->data.fixnum.value;
+    while ((arguments = cdr(arguments))->type != NIL) {
+        next = (car(arguments))->data.fixnum.value;
+        if (previous < next) {
+            previous = next;
+        }
+        else {
+            return f;
+        }
+    }
+    return t;
+}
+
+object*
+is_greater_than_proc (object *arguments)
+{
+    long previous;
+    long next;
+    
+    previous = (car(arguments))->data.fixnum.value;
+    while ((arguments = cdr(arguments))->type != NIL) {
+        next = (car(arguments))->data.fixnum.value;
+        if (previous > next) {
+            previous = next;
+        }
+        else {
+            return f;
+        }
+    }
+    return t;
+}
+
+object*
+cons_proc (object *arguments)
+{
+    return cons(car(arguments), cadr(arguments));
+}
+
+object*
+car_proc (object *arguments)
+{
+    return caar(arguments);
+}
+
+object*
+cdr_proc (object *arguments)
+{
+    return cdar(arguments);
+}
+
+object*
+set_car_proc (object *arguments)
+{
+    set_car(car(arguments), cadr(arguments));
+    return ok;
+}
+
+object*
+set_cdr_proc(object *arguments)
+{
+    set_cdr(car(arguments), cadr(arguments));
+    return ok;
+}
+
+object*
+list_proc(object *arguments)
+{
+    return arguments;
+}
+
+object*
+is_eq_proc (object *arguments)
+{
+    object *obj1;
+    object *obj2;
+    
+    obj1 = car(arguments);
+    obj2 = cadr(arguments);
+    
+    if (obj1->type != obj2->type) {
+        return f;
+    }
+    switch (obj1->type) {
+        case FIXNUM:
+            return (obj1->data.fixnum.value == 
+                    obj2->data.fixnum.value) ?
+                        t : f;
+            break;
+        case CHARACTER:
+            return (obj1->data.character.value == 
+                    obj2->data.character.value) ?
+                        t : f;
+            break;
+        case STRING:
+            return (strcmp(obj1->data.string.value, 
+                           obj2->data.string.value) == 0) ?
+                        t : f;
+            break;
+        default:
+            return (obj1 == obj2) ? t: f;
+    }
 }
 
 object*
@@ -111,6 +362,11 @@ car (object *pair)
     return pair->data.pair.car;
 }
 
+void 
+set_car (object *obj, object* value) {
+    obj->data.pair.car = value;
+}
+
 object*
 cdr (object *pair)
 {
@@ -121,6 +377,12 @@ cdr (object *pair)
     }
     return pair->data.pair.cdr;
 }
+
+void 
+set_cdr (object *obj, object* value) {
+    obj->data.pair.cdr = value;
+}
+
 
 /* checks if a given character (passed in as an integer to accept the EOF) is a
  * character the denotes the boundary between tokens. This is the meat of our
@@ -557,8 +819,41 @@ make_singletons (void)
     set = make_symbol ("set!");
     ok = make_symbol ("ok");
     ifs = make_symbol ("if");
-    plus = make_symbol ("+");
-    define_variable (plus, make_primitive_proc (add_proc), curr_frame);
+
+    add_procedure("null?"     , is_null_proc);
+    add_procedure("boolean?"  , is_boolean_proc);
+    add_procedure("symbol?"   , is_symbol_proc);
+    add_procedure("integer?"  , is_integer_proc);
+    add_procedure("char?"     , is_char_proc);
+    add_procedure("string?"   , is_string_proc);
+    add_procedure("pair?"     , is_pair_proc);
+    add_procedure("procedure?", is_procedure_proc);
+    
+    add_procedure("char->integer" , char_to_integer_proc);
+    add_procedure("integer->char" , integer_to_char_proc);
+    add_procedure("number->string", number_to_string_proc);
+    add_procedure("string->number", string_to_number_proc);
+    add_procedure("symbol->string", symbol_to_string_proc);
+    add_procedure("string->symbol", string_to_symbol_proc);
+      
+    add_procedure("+"        , add_proc);
+    add_procedure("-"        , sub_proc);
+    add_procedure("*"        , mul_proc);
+    add_procedure("quotient" , quotient_proc);
+    add_procedure("remainder", remainder_proc);
+    add_procedure("="        , is_number_equal_proc);
+    add_procedure("<"        , is_less_than_proc);
+    add_procedure(">"        , is_greater_than_proc);
+
+    add_procedure("cons"    , cons_proc);
+    add_procedure("car"     , car_proc);
+    add_procedure("cdr"     , cdr_proc);
+    add_procedure("set-car!", set_car_proc);
+    add_procedure("set-cdr!", set_cdr_proc);
+    add_procedure("list"    , list_proc);
+
+    add_procedure("eq?", is_eq_proc);
+    
 }
 
 
