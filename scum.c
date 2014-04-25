@@ -64,7 +64,29 @@ make_string (char* value)
     strcpy (obj->data.string.value, value);
     return obj;
 }
-   
+
+object*
+make_primitive_proc (object *(*fun)(struct object *arguments)) {
+    object *obj;
+
+    obj = alloc_object();
+    obj->type = PRIM_PROC;
+    obj->data.prim_proc.fun = fun;
+    return obj;
+}
+
+object*
+add_proc (object *arg)
+{
+    long result = 0;
+    while (arg->type != NIL)
+    {
+        result += (car (arg))->data.fixnum.value;
+        arg = cdr (arg);
+    }
+    return make_fixnum (result);
+}
+
 /* The followng 3 functions implement the cons, car, and cdr list operator for
  * lists and pairs
  */
@@ -411,9 +433,9 @@ tailcall:
     else if (has_symbol (quote, exp))
         return cadr (exp);
     else if (has_symbol (define, exp))
-        return define_variable (exp, env);
+        return define_variable (cadr (exp), eval (caddr (exp), env),env);
     else if (has_symbol (set, exp))
-        return set_variable (exp, env);
+        return set_variable (cadr (exp), eval (caddr (exp), env),env);
     else if (has_symbol (ifs, exp))
     {
         object *if_predicate = cadr(exp);
@@ -428,11 +450,17 @@ tailcall:
     }
     else if (exp->type == SYMBOL)
         return lookup_variable_value (exp, env);
-    else
+
+    else if (exp->type == PAIR)
     {
+        object *procedure = lookup_variable_value (car (exp), env);
+        return (procedure->data.prim_proc.fun)(cdr (exp));
+    }
+   else
+   {
         fprintf (stderr, "expression has unknown type");
         exit (1);
-    }
+   }
 }
 
 /* checks if a given EXP contains the specified SYMBOL in its car position, used
@@ -476,6 +504,9 @@ write (object *obj)
             break;
         case SYMBOL:
             printf ("%s", obj->data.symbol.value);
+            break;
+        case PRIM_PROC:
+            printf ("#<procedure>\n");
             break;
         default:
             fprintf (stderr, "Unknown type\n");
@@ -526,6 +557,8 @@ make_singletons (void)
     set = make_symbol ("set!");
     ok = make_symbol ("ok");
     ifs = make_symbol ("if");
+    plus = make_symbol ("+");
+    define_variable (plus, make_primitive_proc (add_proc), curr_frame);
 }
 
 
@@ -598,8 +631,8 @@ void
 interpret(FILE *in, bool silent)
 {
     int instr_count = 1;
-    make_singletons ();
     setup_env();
+    make_singletons ();
     if (!silent)
         printf ("Welcome to Scum, the shitty Scheme interpreter!\n");
     while (1)
@@ -665,10 +698,8 @@ add_binding (binding *new_binding, frame *f)
 }
 
 object*
-define_variable (object *exp, frame *env)
+define_variable (object *def_var, object *def_val, frame *env)
 {
-    object *def_var = cadr (exp);
-    object *def_val = eval (caddr (exp), env);
     binding *b = make_binding (def_var, def_val);
     if (curr_frame == NULL)
         curr_frame = make_frame (b);
@@ -715,11 +746,8 @@ lookup_variable_value (object *exp, frame *env)
 }
 
 object *
-set_variable (object *exp, frame *env)
+set_variable (object *def_var, object *def_val, frame *env)
 {
-   object *def_var = cadr (exp);
-   object *def_val = eval (caddr (exp), env);
-
    frame *curr = env;
    while ( curr != NULL)
    {

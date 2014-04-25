@@ -41,7 +41,7 @@
 
 
 /* Internal representation of Scheme objects/data */
-typedef enum { SYMBOL, PAIR, FIXNUM, BOOLEAN, CHARACTER, STRING, NIL } object_t;
+typedef enum { SYMBOL, PAIR, FIXNUM, BOOLEAN, CHARACTER, STRING, NIL, PRIM_PROC } object_t;
 
 typedef struct object
 {
@@ -73,6 +73,10 @@ typedef struct object
         {
             char *value;
         } symbol;
+        struct
+        {
+            struct object *(*fun)(struct object *arguments);
+        } prim_proc;
     } data;
 } object;
 
@@ -96,8 +100,8 @@ frame *make_frame (binding *);
 binding *make_binding (object *, object *);
 void add_binding (binding *, frame *);
 object *lookup_variable_value (object *, frame *);
-object *define_variable (object *, frame *);
-object *set_variable (object *, frame *);
+object *define_variable (object *, object *, frame *);
+object *set_variable (object *, object *, frame *);
 /* Functions used to read input from files ansd tokenize that input */
 bool is_delimiter (int);
 int peek (FILE*);
@@ -115,6 +119,7 @@ object *make_fixnum (long);
 object *make_boolean (bool);
 object *make_character (char);
 object *make_string (char*);
+object *make_primitive_proc (object *(*fun)(struct object *arguments));
 
 /* Functions used to evaluate Scheme code */
 object *eval (object*, frame *);
@@ -141,12 +146,15 @@ symbol_table_entry *lookup (char *);
 symbol_table_entry *install (object *);
 object *make_symbol (char *);
 
+/* Functions used to implement primitive (library) procedures */
+object *add_proc (object *);
+
 static symbol_table_entry *symbol_table[SYMBOL_TABLE_LEN];
 
 void make_singletons (void);
 
 void interpret (FILE *, bool);
 
-static object *t, *f, *nil, *quote, *define, *set, *ok, *ifs;
+static object *t, *f, *nil, *quote, *define, *set, *ok, *ifs, *plus;
 static frame *global_frame, *curr_frame;
 #endif
