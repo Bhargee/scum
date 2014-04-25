@@ -13,11 +13,11 @@ separate symbols)
 + ~~define and set operators for above~~
 
 ##### Week 3: Control
-+ If and cond
-+ procedures, named and anonymous
++ ~~If and cond~~
++ ~~procedures, named and anonymous~~
 + apply and eval (builds heavily on procedures)
 
 ##### Week 4: Finishing touches
-+ Standard library (trivial after implementing procedures)
++ ~~Standard library (trivial after implementing procedures)~~
 + I/O (easy bc of C backend)
 + mark and sweep (a crappy version, literally store references to non let bound malloced objects in a list, free when full)

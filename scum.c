@@ -77,6 +77,17 @@ make_primitive_proc (object *(*fun)(struct object *arguments))
 }
 
 object*
+make_compound_proc (object *params, object *body, frame *env)
+{
+    object *obj = alloc_object ();
+    obj->type = COMPOUND_PROC;
+    obj->data.compound_proc.parameters = params;
+    obj->data.compound_proc.body = body;
+    obj->data.compound_proc.env = env;
+    return obj;
+}
+
+object*
 is_null_proc (object *arguments)
 {
     return (car(arguments))->type == NIL ? t : f;
@@ -254,6 +265,20 @@ is_greater_than_proc (object *arguments)
     }
     return t;
 }
+
+object*
+list_of_values(object *exps, frame *env)
+{
+    if (exps->type == NIL) {
+        return nil;
+    }
+    else 
+    {
+        return cons(eval(car (exps), env),
+                    list_of_values(cdr (exps), env));
+    }
+}
+
 
 object*
 cons_proc (object *arguments)
@@ -710,13 +735,35 @@ tailcall:
             exp = if_alternative;
         goto tailcall;
     }
+    else if (has_symbol (lambda, exp))
+    {
+        object *params = cadr (exp);
+        object *body = cddr (exp);
+        return make_compound_proc (params, body, env);
+    }
     else if (exp->type == SYMBOL)
         return lookup_variable_value (exp, env);
 
     else if (exp->type == PAIR)
     {
-        object *procedure = lookup_variable_value (car (exp), env);
-        return (procedure->data.prim_proc.fun)(cdr (exp));
+        object *procedure = eval (car (exp), env);
+        object *arguments = list_of_values (cdr (exp), env);
+        if (procedure->type == PRIM_PROC)
+            return (procedure->data.prim_proc.fun)(arguments);
+        else if (procedure->type == COMPOUND_PROC)
+        {
+            env = extend_env( 
+                       procedure->data.compound_proc.parameters,
+                       arguments,
+                       procedure->data.compound_proc.env);
+            exp = procedure->data.compound_proc.body;
+            while ((cdr (exp))->type != NIL) {
+                eval(car(exp), env);
+                exp = cdr(exp);
+            }
+            exp = car(exp);
+            goto tailcall;
+        }
     }
    else
    {
@@ -768,7 +815,10 @@ write (object *obj)
             printf ("%s", obj->data.symbol.value);
             break;
         case PRIM_PROC:
-            printf ("#<procedure>\n");
+            printf ("#<procedure>");
+            break;
+        case COMPOUND_PROC:
+            printf ("#<procedure>");
             break;
         default:
             fprintf (stderr, "Unknown type\n");
@@ -819,7 +869,7 @@ make_singletons (void)
     set = make_symbol ("set!");
     ok = make_symbol ("ok");
     ifs = make_symbol ("if");
-    //define_variable (plus, make_primitive_proc (add_proc), curr_frame);
+    lambda = make_symbol ("lambda");
 
     add_procedure("null?"     , is_null_proc);
     add_procedure("boolean?"  , is_boolean_proc);
@@ -903,6 +953,27 @@ install (object *obj)
     e->object = obj;
     return e;
 }
+
+frame*
+extend_env (object *vars, object *vals, frame *enclosing)
+{
+    binding *head, *b;
+    int i = 0;
+    while (vars->type != NIL)
+    {
+        b = make_binding (car (vars), car (vals));
+        if (i == 0)
+            head = b;
+        b = b->next;
+        vars = cdr (vars);
+        vals = cdr (vals);
+    }
+    frame *env = make_frame (head);
+    env->enclosing_env = enclosing;
+    curr_frame = env;
+    return env;
+}
+
 
 object* 
 make_symbol (char *value)
