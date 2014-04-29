@@ -880,7 +880,7 @@ make_singletons (void)
     ifs = make_symbol ("if");
     lambda = make_symbol ("lambda");
 
-/*    add_procedure("null?"     , is_null_proc);
+    add_procedure("null?"     , is_null_proc);
     add_procedure("boolean?"  , is_boolean_proc);
     add_procedure("symbol?"   , is_symbol_proc);
     add_procedure("integer?"  , is_integer_proc);
@@ -912,7 +912,7 @@ make_singletons (void)
     add_procedure("set-cdr!", set_cdr_proc);
     add_procedure("list"    , list_proc);
 
-    add_procedure("eq?", is_eq_proc);*/
+    add_procedure("eq?", is_eq_proc);
     
 }
 
