@@ -77,7 +77,7 @@ make_primitive_proc (object *(*fun)(struct object *arguments))
 }
 
 object*
-make_compound_proc (object *params, object *body, frame *env)
+make_compound_proc (object *params, object *body, object *env)
 {
     object *obj = alloc_object ();
     obj->type = COMPOUND_PROC;
@@ -267,7 +267,7 @@ is_greater_than_proc (object *arguments)
 }
 
 object*
-list_of_values(object *exps, frame *env)
+list_of_values(object *exps, object *env)
 {
     if (exps->type == NIL) {
         return nil;
@@ -711,7 +711,7 @@ is_self_evaluating (object *o)
  * while tokens representing operators are applied to arguments 
  */
 object*
-eval (object *exp, frame *env)
+eval (object *exp, object *env)
 {
 
 tailcall:
@@ -720,9 +720,15 @@ tailcall:
     else if (has_symbol (quote, exp))
         return cadr (exp);
     else if (has_symbol (define, exp))
-        return define_variable (cadr (exp), eval (caddr (exp), env),env);
+    {
+        define_variable (cadr (exp), eval (caddr (exp), env),env);
+        return ok;
+    }
     else if (has_symbol (set, exp))
-        return set_variable (cadr (exp), eval (caddr (exp), env),env);
+    {
+        set_variable (cadr (exp), eval (caddr (exp), env),env);
+        return ok;
+    }
     else if (has_symbol (ifs, exp))
     {
         object *if_predicate = cadr(exp);
@@ -742,7 +748,7 @@ tailcall:
         return make_compound_proc (params, body, env);
     }
     else if (exp->type == SYMBOL)
-        return lookup_variable_value (exp, env);
+        return lookup_variable (exp, env);
 
     else if (exp->type == PAIR)
     {
@@ -770,6 +776,7 @@ tailcall:
         fprintf (stderr, "expression has unknown type");
         exit (1);
    }
+   return ok;
 }
 
 /* checks if a given EXP contains the specified SYMBOL in its car position, used
@@ -864,6 +871,8 @@ make_singletons (void)
     nil = alloc_object();
     nil->type = NIL;
 
+    global_env = setup_env ();
+
     quote = make_symbol ("quote");
     define = make_symbol ("define");
     set = make_symbol ("set!");
@@ -871,7 +880,7 @@ make_singletons (void)
     ifs = make_symbol ("if");
     lambda = make_symbol ("lambda");
 
-    add_procedure("null?"     , is_null_proc);
+/*    add_procedure("null?"     , is_null_proc);
     add_procedure("boolean?"  , is_boolean_proc);
     add_procedure("symbol?"   , is_symbol_proc);
     add_procedure("integer?"  , is_integer_proc);
@@ -903,7 +912,7 @@ make_singletons (void)
     add_procedure("set-cdr!", set_cdr_proc);
     add_procedure("list"    , list_proc);
 
-    add_procedure("eq?", is_eq_proc);
+    add_procedure("eq?", is_eq_proc);*/
     
 }
 
@@ -954,27 +963,6 @@ install (object *obj)
     return e;
 }
 
-frame*
-extend_env (object *vars, object *vals, frame *enclosing)
-{
-    binding *head, *b;
-    int i = 0;
-    while (vars->type != NIL)
-    {
-        b = make_binding (car (vars), car (vals));
-        if (i == 0)
-            head = b;
-        b = b->next;
-        vars = cdr (vars);
-        vals = cdr (vals);
-    }
-    frame *env = make_frame (head);
-    env->enclosing_env = enclosing;
-    curr_frame = env;
-    return env;
-}
-
-
 object* 
 make_symbol (char *value)
 {
@@ -998,7 +986,6 @@ void
 interpret(FILE *in, bool silent)
 {
     int instr_count = 1;
-    setup_env();
     make_singletons ();
     if (!silent)
         printf ("Welcome to Scum, the shitty Scheme interpreter!\n");
@@ -1007,129 +994,99 @@ interpret(FILE *in, bool silent)
         if (!silent)
         {
             printf ("%d> ", instr_count++);
-            write (eval (read (in), curr_frame));
+            write (eval (read (in), global_env));
             printf ("\n");
         }
         else
         {
-            eval (read (in), curr_frame);
+            eval (read (in), global_env);
         }
     }
     fclose (in);
 }
 
-binding*
-make_binding (object *var, object *val)
-{
-    binding *b;
-    b = malloc (sizeof *b);
-    if (b == NULL)
-    {
-        fprintf (stderr, "Not enough memory\n");
-        exit (1);
-    }
-    b->var = var;
-    b->val = val;
-    b->next = NULL;
-    return b;
-}
-
-frame*
-make_frame (binding *binding)
-{
-    frame *f;
-    f = malloc (sizeof *f);
-    if (f == NULL)
-    {
-        fprintf (stderr, "Not enough memory\n");
-        exit (1);
-    }
-    f->bindings = binding;
-    f->enclosing_env = NULL;
-    return f;
-}
-
-void
+object*
 setup_env (void)
 {
-    curr_frame = global_frame;
+    return extend_env(nil, nil, nil);
+}
+
+object 
+*extend_env(object *vars, object *vals, object *base_env) 
+{
+    return cons(make_frame(vars, vals), base_env);
 }
 
 void
-add_binding (binding *new_binding, frame *f)
+add_binding (object *var, object *val, object *frame)
 {
-    binding *prev_bindings = f->bindings;
-    while (prev_bindings->next != NULL)
-        prev_bindings = prev_bindings->next;
-    prev_bindings->next = new_binding;
+    set_car(frame, cons(var, car(frame)));
+    set_cdr(frame, cons(val, cdr(frame)));
 }
 
 object*
-define_variable (object *def_var, object *def_val, frame *env)
+lookup_variable (object *var, object *env)
 {
-    binding *b = make_binding (def_var, def_val);
-    if (curr_frame == NULL)
-        curr_frame = make_frame (b);
-    else
+    object *frame, *vars, *vals;
+    while (env->type != NIL)
     {
-       frame *curr = env;
-       binding *b = curr->bindings;
-       binding *prev;
-       while (b != NULL)
-       {
-           if (strcmp (def_var->data.symbol.value, b->var->data.symbol.value) == 0)
-           {
-               //TODO free data during gc step
-               b->val = def_val;
-               return ok;
-           }
-           prev = b;
-           b = b->next;
-       }
-       prev->next = make_binding (def_var, def_val);
-
+        frame = first_frame (env);
+        vars = frame_variables(frame);
+        vals = frame_values(frame);
+        while (vars->type != NIL)
+        {
+            if (var == car (vars))
+                return car (vals);
+            vars = cdr (vars);
+            vals = cdr (vals);
+        }
+        env = enclosing_env(env);
     }
-
-    return ok;
+    fprintf (stderr, "Unbound variable, could not lookup\n");
+    exit (1);
 }
 
-object*
-lookup_variable_value (object *exp, frame *env)
+void
+set_variable (object *var, object *val, object *env)
 {
-   frame *curr = env;
-   while ( curr != NULL)
-   {
-       binding *b = curr->bindings;
-       while (b != NULL)
-       {
-           if (strcmp (exp->data.symbol.value, b->var->data.symbol.value) == 0)
-               return b->val;
-           b = b->next;
-       }
-       curr = curr->enclosing_env;
-   }
-   fprintf(stderr, "unbound variable\n");
-   exit(1);
+    object *frame, *vars, *vals;
+    while (env->type != NIL)
+    {
+        frame = first_frame (env);
+        vars = frame_variables(frame);
+        vals = frame_values(frame);
+        while (vars->type != NIL)
+        {
+            if (var == car (vars))
+            {
+                set_car (vals, val);
+                return;
+            }
+            vars = cdr (vars);
+            vals = cdr (vals);
+        }
+        env = enclosing_env(env);
+    }
+    fprintf (stderr, "Unbound variable, could not set\n");
+    exit (1);
 }
 
-object *
-set_variable (object *def_var, object *def_val, frame *env)
+void
+define_variable (object *var, object *val, object *env)
 {
-   frame *curr = env;
-   while ( curr != NULL)
-   {
-       binding *b = curr->bindings;
-       while (b != NULL)
-       {
-           if (strcmp (def_var->data.symbol.value, b->var->data.symbol.value) == 0)
-           {
-               b->val = def_val;
-               return ok;
-           }
-           b = b->next;
-       }
-       curr = curr->enclosing_env;
-   }
-   fprintf(stderr, "unbound variable\n");
-   exit(1);
+    object *frame, *vars, *vals;
+    frame = first_frame (env);
+    vars = frame_variables(frame);
+    vals = frame_values(frame);
+    while (vars->type != NIL)
+    {
+        if (var == car (vars))
+        {
+            set_car (vals, val);
+            return;
+        }
+        vars = cdr (vars);
+        vals = cdr (vals);
+    }
+    add_binding (var, val, frame);
 }

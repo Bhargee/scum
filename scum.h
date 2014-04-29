@@ -42,9 +42,12 @@
 #define add_procedure(scheme_name, c_name)              \
     define_variable(make_symbol(scheme_name),           \
                     make_primitive_proc(c_name),        \
-                    curr_frame);
-
-
+                    global_env);
+#define enclosing_env(env) cdr(env)
+#define first_frame(env) car(env)
+#define make_frame(vars, vals) cons(vars, vals)
+#define frame_variables(frame) car(frame)
+#define frame_values(frame) cdr(frame)
 
 /* Internal representation of Scheme objects/data */
 typedef enum { SYMBOL, PAIR, FIXNUM, BOOLEAN, CHARACTER, STRING, NIL, PRIM_PROC,
@@ -88,7 +91,7 @@ typedef struct object
         {
             struct object *parameters;
             struct object *body;
-            struct frame *env;
+            struct object *env;
         } compound_proc;
     } data;
 } object;
@@ -96,26 +99,13 @@ typedef struct object
 /* Functions and data structures used to create variables in scopes
  * (collectively called the environment )
  */
-typedef struct binding
-{
-    object *var, *val;
-    struct binding *next;
-} binding;
+void add_binding (object*, object*, object*);
+object* lookup_variable (object *, object *);
+void set_variable (object *, object *, object*);
+void define_variable (object*, object*, object*);
+object *setup_env(void);
+object *extend_env (object*, object*, object*);
 
-typedef struct frame
-{
-    struct frame *enclosing_env;
-    binding *bindings;
-} frame;
-
-void setup_env (void);
-frame *make_frame (binding *);
-binding *make_binding (object *, object *);
-void add_binding (binding *, frame *);
-object *lookup_variable_value (object *, frame *);
-object *define_variable (object *, object *, frame *);
-object *set_variable (object *, object *, frame *);
-frame *extend_env (object *, object *, frame *);
 /* Functions used to read input from files ansd tokenize that input */
 bool is_delimiter (int);
 int peek (FILE*);
@@ -134,10 +124,10 @@ object *make_boolean (bool);
 object *make_character (char);
 object *make_string (char*);
 object *make_primitive_proc (object *(*fun)(struct object *arguments));
-object *make_compound_proc (object *, object *, frame *);
+object *make_compound_proc (object *, object *, object *);
 
 /* Functions used to evaluate Scheme code */
-object *eval (object*, frame *);
+object *eval (object*, object *);
 bool has_symbol (object*, object*);
 bool is_self_evaluating (object *);
 
@@ -169,6 +159,5 @@ void make_singletons (void);
 
 void interpret (FILE *, bool);
 
-static object *t, *f, *nil, *quote, *define, *set, *ok, *ifs, *plus, *lambda;
-static frame *global_frame, *curr_frame;
+static object *t, *f, *nil, *quote, *define, *set, *ok, *ifs, *plus, *lambda, *global_env;
 #endif
