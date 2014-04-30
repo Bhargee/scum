@@ -707,6 +707,15 @@ is_self_evaluating (object *o)
     return (ty == BOOLEAN || ty == FIXNUM || ty == CHARACTER || ty == STRING);
 }
 
+object *
+get_apply_arguments (object *arguments)
+{
+    if ((cdr (arguments))->type == NIL)
+        return car (arguments);
+
+    return cons (car (arguments), get_apply_arguments (cdr (arguments)));
+}
+
 /* Evaluator of scheme expressions. Self evaluating atoms are returned as is,
  * while tokens representing operators are applied to arguments 
  */
@@ -777,6 +786,12 @@ tailcall:
     {
         object *procedure = eval (car (exp), env);
         object *arguments = list_of_values (cdr (exp), env);
+        if (procedure->type == PRIM_PROC 
+                && procedure->data.prim_proc.fun == apply_proc)
+        {
+            procedure = car (arguments);
+            arguments = get_apply_arguments (cdr (arguments));
+        }
         if (procedure->type == PRIM_PROC)
             return (procedure->data.prim_proc.fun)(arguments);
         else if (procedure->type == COMPOUND_PROC)
@@ -872,6 +887,11 @@ write_pair (object* pair)
         write(cdr);
     }
 }
+object*
+apply_proc (object *ignore)
+{
+    return NULL;
+}
 /* creates all the global objects (the boolean literals for true and false, the
  * empty list, and operator symbols) so we don't waste memory creates new copies
  * of objects that represent keywords
@@ -933,7 +953,7 @@ make_singletons (void)
     add_procedure("list"    , list_proc);
 
     add_procedure("eq?", is_eq_proc);
-    
+    add_procedure("apply", apply_proc);
 }
 
 

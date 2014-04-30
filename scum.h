@@ -155,6 +155,9 @@ symbol_table_entry *lookup (char *);
 symbol_table_entry *install (object *);
 object *make_symbol (char *);
 
+/* For APPLY trickery */
+object *apply_proc (object *);
+
 static symbol_table_entry *symbol_table[SYMBOL_TABLE_LEN];
 
 void make_singletons (void);
@@ -162,5 +165,5 @@ void make_singletons (void);
 void interpret (FILE *, bool);
 
 static object *t, *f, *nil, *quote, *define, *set, *ok, *ifs, *plus, *lambda, *global_env, *begin,
-              *cond;
+              *cond, *apply;
 #endif
