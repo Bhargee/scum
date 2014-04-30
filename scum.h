@@ -49,6 +49,8 @@
 #define frame_variables(frame) car(frame)
 #define frame_values(frame) cdr(frame)
 
+#define begin_actions(exp) cdr(exp)
+
 /* Internal representation of Scheme objects/data */
 typedef enum { SYMBOL, PAIR, FIXNUM, BOOLEAN, CHARACTER, STRING, NIL, PRIM_PROC,
                 COMPOUND_PROC} object_t;
@@ -159,5 +161,6 @@ void make_singletons (void);
 
 void interpret (FILE *, bool);
 
-static object *t, *f, *nil, *quote, *define, *set, *ok, *ifs, *plus, *lambda, *global_env;
+static object *t, *f, *nil, *quote, *define, *set, *ok, *ifs, *plus, *lambda, *global_env, *begin,
+              *cond;
 #endif

@@ -740,6 +740,18 @@ tailcall:
         define_variable (def_var, eval (def_val, env),env);
         return ok;
     }
+    else if (has_symbol (begin, exp))
+    {
+        exp = begin_actions (exp);
+        while ((cdr (exp))->type != NIL)
+        {
+            eval (car (exp), env);
+            exp = cdr (exp);
+        }
+        exp = car (exp);
+        goto tailcall;
+    }
+
     else if (has_symbol (ifs, exp))
     {
         object *if_predicate = cadr(exp);
@@ -773,12 +785,7 @@ tailcall:
                        procedure->data.compound_proc.parameters,
                        arguments,
                        procedure->data.compound_proc.env);
-            exp = procedure->data.compound_proc.body;
-            while ((cdr (exp))->type != NIL) {
-                eval(car(exp), env);
-                exp = cdr(exp);
-            }
-            exp = car(exp);
+            exp = cons (begin, procedure->data.compound_proc.body);
             goto tailcall;
         }
     }
@@ -890,6 +897,8 @@ make_singletons (void)
     ok = make_symbol ("ok");
     ifs = make_symbol ("if");
     lambda = make_symbol ("lambda");
+    begin = make_symbol ("begin");
+    cond = make_symbol ("cond");
 
     add_procedure("null?"     , is_null_proc);
     add_procedure("boolean?"  , is_boolean_proc);
