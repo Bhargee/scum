@@ -773,6 +773,39 @@ tailcall:
             exp = if_alternative;
         goto tailcall;
     }
+    else if (has_symbol (and, exp))
+    {
+        object *result;
+        exp = cdr (exp);
+        if (exp->type == NIL)
+            return t;
+        while ((cdr (exp))->type != NIL)
+        {
+            result = eval (car (exp), env);
+            if (result == f)
+                return f;
+            exp = cdr (exp);
+        }
+        exp = car (exp);
+        goto tailcall;
+    }
+    else if (has_symbol (or, exp))
+    {
+        object *result;
+        exp = cdr (exp);
+        if (exp->type == NIL)
+            return f;
+        while ((cdr (exp))->type != NIL)
+        {
+            result = eval (car (exp), env);
+            if (result == t)
+                return t;
+            exp = cdr (exp);
+        }
+        exp = car (exp);
+        goto tailcall;
+    }
+ 
     else if (has_symbol (lambda, exp))
     {
         object *params = cadr (exp);
@@ -892,6 +925,11 @@ apply_proc (object *ignore)
 {
     return NULL;
 }
+object*
+eval_proc (object *ignore)
+{
+    return NULL;
+}
 /* creates all the global objects (the boolean literals for true and false, the
  * empty list, and operator symbols) so we don't waste memory creates new copies
  * of objects that represent keywords
@@ -919,6 +957,8 @@ make_singletons (void)
     lambda = make_symbol ("lambda");
     begin = make_symbol ("begin");
     cond = make_symbol ("cond");
+    and = make_symbol ("and");
+    or = make_symbol ("or");
 
     add_procedure("null?"     , is_null_proc);
     add_procedure("boolean?"  , is_boolean_proc);
@@ -954,6 +994,7 @@ make_singletons (void)
 
     add_procedure("eq?", is_eq_proc);
     add_procedure("apply", apply_proc);
+    add_procedure("eval", eval_proc);
 }
 
 

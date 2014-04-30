@@ -15,7 +15,7 @@ separate symbols)
 ##### Week 3: Control
 + ~~If and cond~~
 + ~~procedures, named and anonymous~~
-+ apply and eval (builds heavily on procedures)
++ ~~apply and eval (builds heavily on procedures)~~
 
 ##### Week 4: Finishing touches
 + ~~Standard library (trivial after implementing procedures)~~
