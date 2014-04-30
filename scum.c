@@ -719,14 +719,25 @@ tailcall:
         return exp;
     else if (has_symbol (quote, exp))
         return cadr (exp);
-    else if (has_symbol (define, exp))
-    {
-        define_variable (cadr (exp), eval (caddr (exp), env),env);
-        return ok;
-    }
     else if (has_symbol (set, exp))
     {
         set_variable (cadr (exp), eval (caddr (exp), env),env);
+        return ok;
+    }
+
+    else if (has_symbol (define, exp))
+    {
+        object *def_val, *def_var;
+        if ((cadr (exp))->type == SYMBOL)
+            def_val = caddr (exp);
+        else
+           def_val = cons(lambda, cons(cdadr (exp), cddr (exp)));
+        if ((cadr (exp))->type == SYMBOL)
+            def_var = cadr (exp);
+        else
+            def_var = caadr (exp);
+
+        define_variable (def_var, eval (def_val, env),env);
         return ok;
     }
     else if (has_symbol (ifs, exp))
