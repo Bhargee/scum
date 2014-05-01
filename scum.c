@@ -363,6 +363,24 @@ add_proc (object *arg)
     return make_fixnum (result);
 }
 
+object*
+curr_env_proc (object *arg)
+{
+    return global_env;
+}
+
+object*
+new_env_proc (object *arg)
+{
+    return setup_env();
+}
+
+object*
+toplevel_env_proc (object *arg)
+{
+    return make_env ();
+}
+
 /* The followng 3 functions implement the cons, car, and cdr list operator for
  * lists and pairs
  */
@@ -825,6 +843,14 @@ tailcall:
             procedure = car (arguments);
             arguments = get_apply_arguments (cdr (arguments));
         }
+        if (procedure->type == PRIM_PROC 
+                && procedure->data.prim_proc.fun == eval_proc)
+        {
+            exp = car (arguments);
+            env = cadr (arguments);
+            goto tailcall;
+        }
+
         if (procedure->type == PRIM_PROC)
             return (procedure->data.prim_proc.fun)(arguments);
         else if (procedure->type == COMPOUND_PROC)
@@ -930,6 +956,21 @@ eval_proc (object *ignore)
 {
     return NULL;
 }
+
+object*
+make_env (void)
+{
+    object *env = setup_env();
+    populate_env (env);
+    return env;
+}
+
+void
+add_procedure (char *name, object *(*fun)(struct object *arguments), object *env)
+{
+    define_variable (make_symbol (name), make_primitive_proc(fun), env);
+}
+
 /* creates all the global objects (the boolean literals for true and false, the
  * empty list, and operator symbols) so we don't waste memory creates new copies
  * of objects that represent keywords
@@ -947,7 +988,8 @@ make_singletons (void)
     nil = alloc_object();
     nil->type = NIL;
 
-    global_env = setup_env ();
+    global_env = make_env ();
+
 
     quote = make_symbol ("quote");
     define = make_symbol ("define");
@@ -959,42 +1001,51 @@ make_singletons (void)
     cond = make_symbol ("cond");
     and = make_symbol ("and");
     or = make_symbol ("or");
+}
 
-    add_procedure("null?"     , is_null_proc);
-    add_procedure("boolean?"  , is_boolean_proc);
-    add_procedure("symbol?"   , is_symbol_proc);
-    add_procedure("integer?"  , is_integer_proc);
-    add_procedure("char?"     , is_char_proc);
-    add_procedure("string?"   , is_string_proc);
-    add_procedure("pair?"     , is_pair_proc);
-    add_procedure("procedure?", is_procedure_proc);
+void
+populate_env (object *env)
+{
+    add_procedure("null?"     , is_null_proc, env);
+    add_procedure("boolean?"  , is_boolean_proc, env);
+    add_procedure("symbol?"   , is_symbol_proc, env);
+    add_procedure("integer?"  , is_integer_proc, env);
+    add_procedure("char?"     , is_char_proc, env);
+    add_procedure("string?"   , is_string_proc, env);
+    add_procedure("pair?"     , is_pair_proc, env);
+    add_procedure("procedure?", is_procedure_proc, env);
     
-    add_procedure("char->integer" , char_to_integer_proc);
-    add_procedure("integer->char" , integer_to_char_proc);
-    add_procedure("number->string", number_to_string_proc);
-    add_procedure("string->number", string_to_number_proc);
-    add_procedure("symbol->string", symbol_to_string_proc);
-    add_procedure("string->symbol", string_to_symbol_proc);
+    add_procedure("char->integer" , char_to_integer_proc, env);
+    add_procedure("integer->char" , integer_to_char_proc, env);
+    add_procedure("number->string", number_to_string_proc, env);
+    add_procedure("string->number", string_to_number_proc, env);
+    add_procedure("symbol->string", symbol_to_string_proc, env);
+    add_procedure("string->symbol", string_to_symbol_proc, env);
       
-    add_procedure("+"        , add_proc);
-    add_procedure("-"        , sub_proc);
-    add_procedure("*"        , mul_proc);
-    add_procedure("quotient" , quotient_proc);
-    add_procedure("remainder", remainder_proc);
-    add_procedure("="        , is_number_equal_proc);
-    add_procedure("<"        , is_less_than_proc);
-    add_procedure(">"        , is_greater_than_proc);
+    add_procedure("+"        , add_proc, env);
+    add_procedure("-"        , sub_proc, env);
+    add_procedure("*"        , mul_proc, env);
+    add_procedure("quotient" , quotient_proc, env);
+    add_procedure("remainder", remainder_proc, env);
+    add_procedure("="        , is_number_equal_proc, env);
+    add_procedure("<"        , is_less_than_proc, env);
+    add_procedure(">"        , is_greater_than_proc, env);
 
-    add_procedure("cons"    , cons_proc);
-    add_procedure("car"     , car_proc);
-    add_procedure("cdr"     , cdr_proc);
-    add_procedure("set-car!", set_car_proc);
-    add_procedure("set-cdr!", set_cdr_proc);
-    add_procedure("list"    , list_proc);
+    add_procedure("cons"    , cons_proc, env);
+    add_procedure("car"     , car_proc, env);
+    add_procedure("cdr"     , cdr_proc, env);
+    add_procedure("set-car!", set_car_proc, env);
+    add_procedure("set-cdr!", set_cdr_proc, env);
+    add_procedure("list"    , list_proc, env);
 
-    add_procedure("eq?", is_eq_proc);
-    add_procedure("apply", apply_proc);
-    add_procedure("eval", eval_proc);
+    add_procedure("eq?", is_eq_proc, env);
+    add_procedure("apply", apply_proc, env);
+    add_procedure("eval", eval_proc, env);
+
+    add_procedure("new", new_env_proc, env);
+    add_procedure("currenv", curr_env_proc, env);
+    add_procedure("toplevelenv", toplevel_env_proc, env);
+    add_procedure("eval", eval_proc, env);
 }
 
 

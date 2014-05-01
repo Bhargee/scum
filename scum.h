@@ -39,10 +39,6 @@
 #define cdddar(obj) cdr(cdr(cdr(car(obj))))
 #define cddddr(obj) cdr(cdr(cdr(cdr(obj))))
 
-#define add_procedure(scheme_name, c_name)              \
-    define_variable(make_symbol(scheme_name),           \
-                    make_primitive_proc(c_name),        \
-                    global_env);
 #define enclosing_env(env) cdr(env)
 #define first_frame(env) car(env)
 #define make_frame(vars, vals) cons(vars, vals)
@@ -107,6 +103,9 @@ void set_variable (object *, object *, object*);
 void define_variable (object*, object*, object*);
 object *setup_env(void);
 object *extend_env (object*, object*, object*);
+void populate_env (object*);
+object *make_env (void);
+void add_procedure (char *, object*(object*) , object *);
 
 /* Functions used to read input from files ansd tokenize that input */
 bool is_delimiter (int);
