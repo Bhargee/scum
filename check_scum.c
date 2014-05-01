@@ -45,7 +45,7 @@ END_TEST
 
 START_TEST (test_char_read)
 {
-    FILE *f = fopen ("test_files/test_char_read.test", "r");
+    FILE *f = fopen ("test_files/test_char_read.scm", "r");
     if (f == NULL)
         ck_abort_msg ("file reading didn't work\n");
     object *o = read (f);
@@ -60,7 +60,7 @@ END_TEST
 
 START_TEST (test_read_string)
 {
-    FILE *f = fopen ("test_files/test_string_read.test", "r");
+    FILE *f = fopen ("test_files/test_string_read.scm", "r");
     if (f == NULL)
         ck_abort_msg ("file reading didn't work\n");
     object *o = read (f);
@@ -70,7 +70,7 @@ END_TEST
 
 START_TEST (test_lambda)
 {
-    FILE *f = fopen ("test_files/test_lambda.test", "r");
+    FILE *f = fopen ("test_files/test_lambda.scm", "r");
     if (f == NULL)
         ck_abort_msg ("file reading didn't work\n");
     interpret (f, true);
@@ -79,11 +79,47 @@ END_TEST
 
 START_TEST (test_nested_lambda)
 {
-    FILE *f = fopen ("test_files/test_nested_lambda.test", "r");
+    FILE *f = fopen ("test_files/test_nested_lambda.scm", "r");
     if (f == NULL)
         ck_abort_msg ("file reading didn't work\n");
     interpret (f, true);
 
+}
+END_TEST
+
+START_TEST (test_lambda_recursion)
+{
+    FILE *f = fopen ("test_files/test_lambda_recursion.scm", "r");
+    if (f == NULL)
+        ck_abort_msg ("file reading didn't work\n");
+    interpret (f, true);
+}
+END_TEST
+
+START_TEST (test_and)
+{
+    FILE *f = fopen ("test_files/test_and.scm", "r");
+    if (f == NULL)
+        ck_abort_msg ("file reading didn't work\n");
+    interpret (f, true);
+}
+END_TEST
+
+START_TEST (test_or)
+{
+    FILE *f = fopen ("test_files/test_or.scm", "r");
+    if (f == NULL)
+        ck_abort_msg ("file reading didn't work\n");
+    interpret (f, true);
+}
+END_TEST
+
+START_TEST (test_apply)
+{
+    FILE *f = fopen ("test_files/test_apply.scm", "r");
+    if (f == NULL)
+        ck_abort_msg ("file reading didn't work\n");
+    interpret (f, true);
 }
 END_TEST
 
@@ -101,6 +137,10 @@ scum_suite (void)
     tcase_add_test (tc_core, test_read_string);
     tcase_add_test (tc_core, test_lambda);
     tcase_add_test (tc_core, test_nested_lambda);
+    tcase_add_test (tc_core, test_lambda_recursion);
+    tcase_add_test (tc_core, test_and);
+    tcase_add_test (tc_core, test_or);
+    tcase_add_test (tc_core, test_apply);
     suite_add_tcase (s, tc_core);
 
     return s;

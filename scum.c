@@ -87,6 +87,12 @@ make_compound_proc (object *params, object *body, object *env)
     return obj;
 }
 
+/*
+ * The following are all standard library functions meant to be called from
+ * within the interpreter. They are bound o symbols that, when evaluated, cause
+ * these functions to run
+ */
+
 object*
 is_null_proc (object *arguments)
 {
@@ -266,6 +272,10 @@ is_greater_than_proc (object *arguments)
     return t;
 }
 
+/*
+ * Extracts the arguments of a variable arity function call
+ * returns them in a list
+ */
 object*
 list_of_values(object *exps, object *env)
 {
@@ -362,6 +372,11 @@ add_proc (object *arg)
     }
     return make_fixnum (result);
 }
+
+/*
+ * These three functions are also bound tosymbols, but are different from the
+ * above in that they allow creation of environments for the purposes of eval
+ */
 
 object*
 curr_env_proc (object *arg)
@@ -735,7 +750,9 @@ get_apply_arguments (object *arguments)
 }
 
 /* Evaluator of scheme expressions. Self evaluating atoms are returned as is,
- * while tokens representing operators are applied to arguments 
+ * while tokens representing operators are applied to arguments. This function
+ * simulates tail call optimization by using the same stack for tail recursive
+ * calls via a goto and variable renaming
  */
 object*
 eval (object *exp, object *env)
@@ -744,19 +761,27 @@ eval (object *exp, object *env)
 tailcall:
     if (is_self_evaluating (exp))
         return exp;
+    /* quotes symbol back to screen */
     else if (has_symbol (quote, exp))
         return cadr (exp);
+    /* Sets previously defined variable */
     else if (has_symbol (set, exp))
     {
         set_variable (cadr (exp), eval (caddr (exp), env),env);
         return ok;
     }
-
+    /* creates/redefines varisable in current scope */
     else if (has_symbol (define, exp))
     {
         object *def_val, *def_var;
+        /* If the defined thing is bound to a symbol, we define the value as the
+         * supplied value
+         */
         if ((cadr (exp))->type == SYMBOL)
             def_val = caddr (exp);
+        /* Otherwise we are usoing the shortform for a lambda, so we create a
+         * lambda expression to eval
+         */
         else
            def_val = cons(lambda, cons(cdadr (exp), cddr (exp)));
         if ((cadr (exp))->type == SYMBOL)
@@ -767,6 +792,7 @@ tailcall:
         define_variable (def_var, eval (def_val, env),env);
         return ok;
     }
+    /* Mandated by R5RS, h=implementation of tail calls */
     else if (has_symbol (begin, exp))
     {
         exp = begin_actions (exp);
@@ -791,6 +817,7 @@ tailcall:
             exp = if_alternative;
         goto tailcall;
     }
+    /* short circuited and and or */
     else if (has_symbol (and, exp))
     {
         object *result;
@@ -823,26 +850,42 @@ tailcall:
         exp = car (exp);
         goto tailcall;
     }
- 
+    /* Anonymous function definitions */ 
     else if (has_symbol (lambda, exp))
     {
         object *params = cadr (exp);
         object *body = cddr (exp);
         return make_compound_proc (params, body, env);
     }
+    /* Symbol evaluator */
     else if (exp->type == SYMBOL)
         return lookup_variable (exp, env);
 
+    /* This is a beast. If we've come here in eval, that means we have a form,
+     * which is a lisp/scheme construct surrounded by parenthesis. We have to
+     * deconstruct the form into it's constituent partys and recursively
+     * evaluate all those parts, which may themselves be forms. Since we've
+     * reached this point we can assume we're at some sort of application
+     */
     else if (exp->type == PAIR)
     {
+        /* First we get the procedure and is arguments */
         object *procedure = eval (car (exp), env);
         object *arguments = list_of_values (cdr (exp), env);
+        /* If the procedure is apply, we treat it slightly differently. Then the
+         * real procedure is the first argument of apply, and the arguments are
+         * the rest of the members of the form
+         */
         if (procedure->type == PRIM_PROC 
                 && procedure->data.prim_proc.fun == apply_proc)
         {
             procedure = car (arguments);
             arguments = get_apply_arguments (cdr (arguments));
         }
+        /* If the procedure is eval, we treat it differently. The first argument
+         * is an expression to evaluate and the second is an environment to
+         * evaluate it in. We get those and tail recursively evaluate the exp
+         */
         if (procedure->type == PRIM_PROC 
                 && procedure->data.prim_proc.fun == eval_proc)
         {
@@ -850,9 +893,15 @@ tailcall:
             env = cadr (arguments);
             goto tailcall;
         }
-
+        /* Otherwise, if it's a primitive (library) procedure, we apply it to
+         * its arguments
+         */
         if (procedure->type == PRIM_PROC)
             return (procedure->data.prim_proc.fun)(arguments);
+        /* If we are applying a compound (user defined) procedure, we add a
+         * env frame (like a stack frame in C) with the procedure variables and
+         * their supplied values and evaluate the body in that new frame
+         */
         else if (procedure->type == COMPOUND_PROC)
         {
             env = extend_env( 
@@ -862,7 +911,7 @@ tailcall:
             exp = cons (begin, procedure->data.compound_proc.body);
             goto tailcall;
         }
-    }
+   }
    else
    {
         fprintf (stderr, "expression has unknown type");
@@ -946,6 +995,11 @@ write_pair (object* pair)
         write(cdr);
     }
 }
+
+/* The following two functions are dummpy library procedures that exist only so
+ * we can bind them to symbols to make them callable. These are never called,
+ * but are checked for in eval
+ */
 object*
 apply_proc (object *ignore)
 {
@@ -1003,6 +1057,7 @@ make_singletons (void)
     or = make_symbol ("or");
 }
 
+/* Adds library procedures to a given argument */
 void
 populate_env (object *env)
 {
@@ -1095,6 +1150,7 @@ install (object *obj)
     return e;
 }
 
+/* Creates a symbol IR and adds it to the symbol table */
 object* 
 make_symbol (char *value)
 {
@@ -1137,12 +1193,17 @@ interpret(FILE *in, bool silent)
     fclose (in);
 }
 
+/* Creates an empty environment */
 object*
 setup_env (void)
 {
     return extend_env(nil, nil, nil);
 }
 
+/* Adds a frame to the top of the 'stack' containing the specified variable and
+ * value lists. The values in the value list correspond to the symbols in thje
+ * vars list in order 
+ */
 object 
 *extend_env(object *vars, object *vals, object *base_env) 
 {
@@ -1156,6 +1217,7 @@ add_binding (object *var, object *val, object *frame)
     set_cdr(frame, cons(val, cdr(frame)));
 }
 
+/* looks up a variable in the entirety of the env */
 object*
 lookup_variable (object *var, object *env)
 {
