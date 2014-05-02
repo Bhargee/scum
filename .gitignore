@@ -1,5 +1,5 @@
 scum
 *.o
 .*.swp
-*.scm
+./*.scm
 *.dSYM
